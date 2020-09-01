@@ -13,12 +13,6 @@ rmqio.on('connection', function (socket) {
 
 rmqio.on(Message.UserCreate.topic(), function (msg, ack, nack) {
   console.log(msg)
-  // msg is an instance of UserCreate
-  console.log('Message class: ', msg.constructor.name)
-  console.log('Message object: ', msg)
-  console.log('Message JSON: ', msg.toJSON())
-  console.log('Routing key (Topic): ', msg.topic())
-  console.log('Message aggrefateId: ', msg.getAggregateId())
   ack()
 })
 
