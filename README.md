@@ -11,7 +11,7 @@ rmqio.on('connection', function (socket) {
   console.log('connected')
 })
 
-rmqio.on(Message.UserCreate.topic(), function (msg, ack, nack) {
+rmqio.on('TOPIC', function (msg, ack, nack) {
   console.log(msg)
   ack()
 })
