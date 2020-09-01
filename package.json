@@ -1,0 +1,54 @@
+{
+  "name": "rmq.io",
+  "version": "1.0.0",
+  "description": "RabbitMQ complexity reduced to a socket.io like lib",
+  "main": "dist/rmqio.js",
+  "repository": "git@github.com:j0t3x/rmq.io.git",
+  "scripts": {
+    "prepack": "npm run build",
+    "build": "webpack --config webpack.config.js",
+    "dev-build": "webpack --watch --config webpack.config.js",
+    "test": "jest",
+    "flow": "flow",
+    "lint": "npx eslint --fix src",
+    "pub": "node ./examples/mpub.js",
+    "sub": "node ./examples/msub.js"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
+  },
+  "author": "Tex",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.5.5"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.8.3",
+    "@babel/core": "^7.8.3",
+    "@babel/preset-flow": "^7.8.3",
+    "babel-eslint": "^10.0.3",
+    "babel-loader": "^8.0.6",
+    "babel-plugin-add-module-exports": "^1.0.2",
+    "concurrently": "^5.1.0",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-flowtype": "^4.6.0",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-jest": "^23.6.0",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "flow-bin": "^0.115.0",
+    "jest": "^24.9.0",
+    "node-hot-loader": "^1.17.8",
+    "nodemon": "^2.0.2",
+    "source-map-support": "^0.5.16",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
+    "webpack-node-externals": "^1.7.2"
+  }
+}
