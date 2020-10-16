@@ -1,6 +1,6 @@
 {
   "name": "rmq.io",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "RabbitMQ complexity reduced to a socket.io like lib",
   "main": "dist/rmqio.js",
   "repository": "git@github.com:j0t3x/rmq.io.git",
