@@ -6,7 +6,7 @@
   "repository": "git@github.com:j0t3x/rmq.io.git",
   "scripts": {
     "prepack": "npm run build",
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack --config webpack-prod.config.js",
     "dev-build": "webpack --watch --config webpack.config.js",
     "test": "jest",
     "flow": "flow",
@@ -14,7 +14,6 @@
     "pub": "node ./examples/mpub.js",
     "sub": "node ./examples/msub.js"
   },
-  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
   "jest": {
     "testEnvironment": "node",
     "collectCoverage": true,
