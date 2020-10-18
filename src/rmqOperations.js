@@ -96,8 +96,8 @@ function connect (url, ee, type, hb, pocef) {
           checkQueue(ee.queue)
           bindTo(ee)
         }
-        console.error('[AMQP] Connected...')
-        ee.emit('conection', ee)
+        console.log('[AMQP] Connected...')
+        ee.emit('connection', ee)
         resolve()
       })
     })
@@ -105,18 +105,19 @@ function connect (url, ee, type, hb, pocef) {
 }
 
 function publish (exchange: string, topic: string, msg: Buffer) {
-  try {
-    chann.publish(exchange, topic, msg, { persistent: true },
-      function (err, ok) {
-        if (err) {
-          console.error('[AMQP] publish', err)
-          // offlinePubQueue.push([exchange, routingKey, content]);
-          // pubChannel.connection.close();
-        }
-      })
-  } catch (e) {
-    console.error('[AMQP] publish', e.message)
-  }
+  return new Promise((resolve, reject) => {
+    try {
+      chann.publish(exchange, topic, msg, { persistent: true },
+        function (err, ok) {
+          if (err) {
+            reject(err)
+          }
+          resolve(true)
+        })
+    } catch (e) {
+      reject(e)
+    }
+  })
 }
 
 function close (cb) {

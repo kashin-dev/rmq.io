@@ -6,10 +6,11 @@ rmqio = rmqio({ url })
 rmqio
   .setRoute('test')
   .start()
-  .then(() => {
-    rmqio.publish({
+  .then(async () => {
+    const res = await rmqio.publish({
       hello: 'world'
     }, 'test')
+    console.log(res)
   })
 
 process.on('SIGINT', () => {

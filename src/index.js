@@ -58,7 +58,7 @@ class RMQ extends EventEmitter {
    */
   publish (message, topic = 'default') {
     const buffmsg = Buffer.from(this.getValidJSONMessage(message))
-    rmqpublish(this.exchange, topic, buffmsg)
+    return rmqpublish(this.exchange, topic, buffmsg)
   }
 
   closeConn (cb) {
