@@ -100,7 +100,7 @@ class RMQ extends events.EventEmitter {
   }
 }
 
-export function rmqio(opt: Options) {
+export function rmqio(opt: Options): RMQ {
   if (RMQSingleton) {
     return RMQSingleton
   }
