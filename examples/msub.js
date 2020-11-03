@@ -1,6 +1,6 @@
 const url = 'amqp://dnvjewjo:X_aKJ-7N8GrSjQu0LUpVugJ_0G57IvHn@prawn.rmq.cloudamqp.com/dnvjewjo'
 
-let { rmqio } = require('../dist/rmqio.js')
+let {rmqio} = require('../dist')
 
 rmqio = rmqio({
   url: url,

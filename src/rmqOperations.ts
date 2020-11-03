@@ -1,11 +1,10 @@
-// @flow
-const fs = require('fs')
-const amqp = require('amqplib/callback_api')
+import * as fs from 'fs'
+import * as amqp from 'amqplib/callback_api'
 
 let conn: any
 let chann: any
 
-const config = {
+export const rmqconfig = {
   RECONN_TIMEOUT: 5000,
   PREFETCH: 10,
   HEARTBEAT: 60,
@@ -27,7 +26,7 @@ let erroneusMsgStream
  * @param {string} [additional]
  * @returns {Error}
  */
-function bindTo (ee) {
+function bindTo(ee) {
   for (const ce in ee.subscriptions) {
     chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     chann.consume(ee.queue, function (msg) {
@@ -40,10 +39,10 @@ function bindTo (ee) {
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
-        () => { chann.ack(msg) },
-        () => { chann.reject(msg) }
+        () => {chann.ack(msg)},
+        () => {chann.reject(msg)}
       )
-    }, { noAck: false })
+    }, {noAck: false})
   }
 }
 
@@ -56,7 +55,7 @@ function bindTo (ee) {
  * @param pocef
  * @returns {Promise<any>}
  */
-function connect (url, ee, type, hb, pocef) {
+export function rmqconnect(url, ee, type, hb, pocef) {
   return new Promise((resolve, reject) => {
     if (conn && chann) {
       reject(new Error('[AMQP] conn y chann are not set'))
@@ -68,7 +67,7 @@ function connect (url, ee, type, hb, pocef) {
     amqp.connect(url + '?heartbeat=' + hb, function (err0, connection) {
       if (err0) {
         console.error('[AMQP]', err0)
-        return setTimeout(connect, config.RECONN_TIMEOUT)
+        return setTimeout(rmqconnect, rmqconfig.RECONN_TIMEOUT)
       }
 
       conn = connection
@@ -82,7 +81,7 @@ function connect (url, ee, type, hb, pocef) {
 
       conn.on('close', function () {
         console.error('[AMQP] reconnecting')
-        return setTimeout(connect, config.RECONN_TIMEOUT)
+        return setTimeout(rmqconnect, rmqconfig.RECONN_TIMEOUT)
       })
 
       conn.createConfirmChannel(function (err1, channel) {
@@ -96,7 +95,6 @@ function connect (url, ee, type, hb, pocef) {
           checkQueue(ee.queue)
           bindTo(ee)
         }
-        console.log('[AMQP] Connected...')
         ee.emit('connection', ee)
         resolve()
       })
@@ -104,10 +102,10 @@ function connect (url, ee, type, hb, pocef) {
   })
 }
 
-function publish (exchange: string, topic: string, msg: Buffer) {
+export function rmqpublish(exchange: string, topic: string, msg: Buffer) {
   return new Promise((resolve, reject) => {
     try {
-      chann.publish(exchange, topic, msg, { persistent: true },
+      chann.publish(exchange, topic, msg, {persistent: true},
         function (err, ok) {
           if (err) {
             reject(err)
@@ -120,7 +118,7 @@ function publish (exchange: string, topic: string, msg: Buffer) {
   })
 }
 
-function close (cb) {
+export function rmqclose(cb) {
   erroneusMsgStream.end()
   connMsgStream.end()
   conn.close(function () {
@@ -128,14 +126,14 @@ function close (cb) {
   })
 }
 
-function createConnErrStream (file) {
+function createConnErrStream(file) {
   connMsgStream = fs.createWriteStream(file, {
     flags: 'a'
   })
 }
 
 // eslint-disable-next-line no-unused-vars
-function saveConnErrMessage (msg) {
+function saveConnErrMessage(msg) {
   connMsgStream.write(
     msg.content.toString() + ' ' +
     JSON.stringify(msg.fields) + '\n'
@@ -143,13 +141,13 @@ function saveConnErrMessage (msg) {
   chann.ack(msg)
 }
 
-function createDeflectorStream () {
-  erroneusMsgStream = fs.createWriteStream(config.MSG_ERROR_LOG, {
+function createDeflectorStream() {
+  erroneusMsgStream = fs.createWriteStream(rmqconfig.MSG_ERROR_LOG, {
     flags: 'a'
   })
 }
 
-function deflectErroneusMessage (msg) {
+function deflectErroneusMessage(msg) {
   erroneusMsgStream.write(
     msg.content.toString() + ' ' +
     JSON.stringify(msg.fields) + '\n'
@@ -157,49 +155,41 @@ function deflectErroneusMessage (msg) {
   chann.ack(msg)
 }
 
-function checkQueue (q) {
-  chann.prefetch(config.PREFETCH)
+function checkQueue(q) {
+  chann.prefetch(rmqconfig.PREFETCH)
   chann.assertQueue(q, {
     durable: true,
-    function (err, _ok) {
-      if (closeOnErr(err)) return
-      console.log('Worker is started')
+    function(err, _ok) {
+      closeOnErr(err)
     }
   })
 }
 
-function checkExchange (ex) {
+function checkExchange(ex) {
   if (!ex) return
   chann.assertExchange(ex, 'direct', {
     durable: true
   })
 }
 
-function closeOnErr (err) {
+function closeOnErr(err) {
   if (!err) return false
   console.error('[AMQP] error', err)
   conn.close()
   return true
 }
 
-function parseMsg (msg) {
+function parseMsg(msg) {
   let content: string
   let result
   try {
     content = msg.content.toString()
     result = JSON.parse(content)
-    if (typeof result === 'number') { throw new Error('Message invalid type number') }
-    if (result instanceof Array) { throw new Error('Message invalid type Array') }
+    if (typeof result === 'number') {throw new Error('Message invalid type number')}
+    if (result instanceof Array) {throw new Error('Message invalid type Array')}
   } catch (e) {
     console.error(e)
     result = null
   }
   return result
-}
-
-module.exports = {
-  rmqconnect: connect,
-  rmqpublish: publish,
-  rmqclose: close,
-  rmqconfig: config
 }

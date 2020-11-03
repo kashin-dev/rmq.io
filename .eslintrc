@@ -1,8 +1,12 @@
 {
-    "extends": ["standard", "plugin:flowtype/recommended"],
-    "plugins": ["flowtype", "jest"],
-    "env": {
-        "jest": true
-    }
+  "root": true,
+    "parser": "@typescript-eslint/parser",
+      "plugins": [
+        "@typescript-eslint"
+      ],
+        "extends": [
+          "eslint:recommended",
+          "plugin:@typescript-eslint/eslint-recommended",
+          "plugin:@typescript-eslint/recommended"
+        ]
 }
-

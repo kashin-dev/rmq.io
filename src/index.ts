@@ -1,17 +1,34 @@
-const { rmqconnect, rmqpublish, rmqclose, rmqconfig } = require('./rmqOperations.js')
-const EventEmitter = require('events')
+import {
+  rmqconnect,
+  rmqpublish,
+  rmqclose,
+  rmqconfig
+} from './rmqOperations.js'
+
+import * as events from 'events'
 
 // @flow
 let RMQSingleton: any
+interface Options {
+  url: string,
+  reconnTime?: number,
+  preFetchingPolicy?: number,
+  heartBeat?: number,
+  persistFileOnConnError?: string
+}
 
-class RMQ extends EventEmitter {
+class RMQ extends events.EventEmitter {
   url: string
   queue: string
-  subscriptions: Array<string>
+  subscriptions: string[]
   exchange: string
   type: 'pub' | 'sub'
+  reconnTime: number
+  prefetchPolicy: number
+  heartBeat: number
+  persistToFile: string
 
-  constructor (options) {
+  constructor(options) {
     super()
     this.url = options.url
     this.reconnTime = options.reconnTime
@@ -20,22 +37,22 @@ class RMQ extends EventEmitter {
     this.persistToFile = options.persistFileOnConnError
   }
 
-  setServiceName (q: string) {
+  setServiceName(q: string) {
     this.queue = q
     return this
   }
 
-  setRoute (e: string) {
+  setRoute(e: string) {
     this.exchange = e
     return this
   }
 
-  subscribe () {
+  subscribe(...arg: string[]) {
     if (this.type === 'pub') return
     if (arguments.length === 0) {
       throw new Error('You must be  subscribed to a topic to receive messages')
     }
-    this.subscriptions = arguments
+    this.subscriptions = arg
     return this
   }
 
@@ -43,7 +60,7 @@ class RMQ extends EventEmitter {
  * Valida si el mensaje es registrado
  * @param {Message} message
  */
-  getValidJSONMessage (message) {
+  getValidJSONMessage(message: string): any {
     let jsonMsg
     try {
       jsonMsg = JSON.stringify(message)
@@ -56,20 +73,16 @@ class RMQ extends EventEmitter {
   /**
    * @param {Message} message
    */
-  publish (message, topic = 'default') {
+  publish(message: string, topic = 'default') {
     const buffmsg = Buffer.from(this.getValidJSONMessage(message))
     return rmqpublish(this.exchange, topic, buffmsg)
   }
 
-  closeConn (cb) {
+  closeConn(cb) {
     rmqclose(cb)
   }
 
-  /**
-   * Inicializa la conexión hacia la Cola
-   * @returns {Promise<any>}
-   */
-  start () {
+  start(): Promise<any> {
     if (!this.queue && !this.exchange) {
       throw new Error('An exchange defined is mandatory for this library')
     }
@@ -87,26 +100,21 @@ class RMQ extends EventEmitter {
   }
 }
 
-function rmqio (opt) {
+function rmqio(opt: Options) {
   if (RMQSingleton) {
     return RMQSingleton
   }
-  var options: {
-    url: string,
-    reconnTime?: number,
-    preFetchingPolicy?: number,
-    heartBeat?: number,
-    persistFileOnConnError?: string
-  } = opt
+
+  const options: Options = opt
 
   options.reconnTime =
-        options.reconnTime || rmqconfig.RECONN_TIMEOUT
+    options.reconnTime || rmqconfig.RECONN_TIMEOUT
   options.preFetchingPolicy =
-        options.preFetchingPolicy || rmqconfig.PREFETCH
+    options.preFetchingPolicy || rmqconfig.PREFETCH
   options.heartBeat =
-        options.heartBeat || rmqconfig.HEARTBEAT
+    options.heartBeat || rmqconfig.HEARTBEAT
   options.persistFileOnConnError =
-        options.persistFileOnConnError || rmqconfig.CONN_ERROR_LOG
+    options.persistFileOnConnError || rmqconfig.CONN_ERROR_LOG
   /**
    * {
    *  url:,
@@ -116,7 +124,7 @@ function rmqio (opt) {
    *  persistFileOnConnError:
    * }
    */
-  if (!RMQSingleton) { RMQSingleton = new RMQ(options) }
+  if (!RMQSingleton) {RMQSingleton = new RMQ(options)}
 
   return RMQSingleton
 }
