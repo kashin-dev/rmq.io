@@ -8,7 +8,7 @@ import {
 import * as events from 'events'
 
 // @flow
-let RMQSingleton: any
+let RMQSingleton: RMQ
 interface Options {
   url: string,
   reconnTime?: number,
@@ -17,18 +17,19 @@ interface Options {
   persistFileOnConnError?: string
 }
 
-class RMQ extends events.EventEmitter {
-  url: string
-  queue: string
-  subscriptions: string[]
-  exchange: string
-  type: 'pub' | 'sub'
-  reconnTime: number
-  prefetchPolicy: number
-  heartBeat: number
-  persistToFile: string
+//TODO: maybe export as a type
+export class RMQ extends events.EventEmitter {
+  private url: string
+  private queue: string
+  private subscriptions: string[]
+  private exchange: string
+  private type: 'pub' | 'sub'
+  private reconnTime: number
+  private prefetchPolicy: number
+  private heartBeat: number
+  private persistToFile: string
 
-  constructor(options) {
+  constructor(options: Options) {
     super()
     this.url = options.url
     this.reconnTime = options.reconnTime
@@ -37,17 +38,17 @@ class RMQ extends events.EventEmitter {
     this.persistToFile = options.persistFileOnConnError
   }
 
-  setServiceName(q: string) {
+  setServiceName(q: string): RMQ {
     this.queue = q
     return this
   }
 
-  setRoute(e: string) {
+  setRoute(e: string): RMQ {
     this.exchange = e
     return this
   }
 
-  subscribe(...arg: string[]) {
+  subscribe(...arg: string[]): RMQ {
     if (this.type === 'pub') return
     if (arguments.length === 0) {
       throw new Error('You must be  subscribed to a topic to receive messages')
@@ -59,6 +60,7 @@ class RMQ extends events.EventEmitter {
   /**
  * Valida si el mensaje es registrado
  * @param {Message} message
+ * TODO: make an interface definition for a message
  */
   getValidJSONMessage(message: string): any {
     let jsonMsg
@@ -73,12 +75,12 @@ class RMQ extends events.EventEmitter {
   /**
    * @param {Message} message
    */
-  publish(message: string, topic = 'default') {
+  publish(message: string, topic = 'default'): Promise<any> {
     const buffmsg = Buffer.from(this.getValidJSONMessage(message))
     return rmqpublish(this.exchange, topic, buffmsg)
   }
 
-  closeConn(cb) {
+  closeConn(cb: any): void {
     rmqclose(cb)
   }
 

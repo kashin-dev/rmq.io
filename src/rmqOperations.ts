@@ -102,7 +102,7 @@ export function rmqconnect(url, ee, type, hb, pocef) {
   })
 }
 
-export function rmqpublish(exchange: string, topic: string, msg: Buffer) {
+export function rmqpublish(exchange: string, topic: string, msg: Buffer) : Promise<any>{
   return new Promise((resolve, reject) => {
     try {
       chann.publish(exchange, topic, msg, {persistent: true},
@@ -118,7 +118,7 @@ export function rmqpublish(exchange: string, topic: string, msg: Buffer) {
   })
 }
 
-export function rmqclose(cb) {
+export function rmqclose(cb:any) : void {
   erroneusMsgStream.end()
   connMsgStream.end()
   conn.close(function () {
