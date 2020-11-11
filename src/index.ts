@@ -9,7 +9,7 @@ import * as events from 'events'
 
 // @flow
 let RMQSingleton: RMQ
-interface Options {
+declare interface Options {
   url: string,
   reconnTime?: number,
   preFetchingPolicy?: number,
@@ -17,7 +17,14 @@ interface Options {
   persistFileOnConnError?: string
 }
 
-//TODO: maybe export as a type
+declare type json = {
+  [key: string]: any;
+}
+declare type Message = {
+  topic?: string,
+  content: string | json | number
+}
+
 export class RMQ extends events.EventEmitter {
   private url: string
   private queue: string
@@ -75,9 +82,27 @@ export class RMQ extends events.EventEmitter {
   /**
    * @param {Message} message
    */
-  publish(message: string, topic = 'default'): Promise<any> {
-    const buffmsg = Buffer.from(this.getValidJSONMessage(message))
-    return rmqpublish(this.exchange, topic, buffmsg)
+  publish(message: Message, topic = 'default'): Promise<any> {
+    let buf: Buffer
+    if (typeof message.content === "string") {
+      buf = Buffer.from(message.content)
+    } else if (typeof message.content === "number") {
+      buf = Buffer.from(
+        message.content.toString()
+      )
+    } else {
+      //JSON 
+      buf = Buffer.from(
+        JSON.stringify(
+          <json>message.content
+        )
+      )
+    }
+
+    if (message.topic)
+      topic = message.topic
+
+    return rmqpublish(this.exchange, topic, buf)
   }
 
   closeConn(cb: any): void {

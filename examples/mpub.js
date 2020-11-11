@@ -1,4 +1,4 @@
-const url = 'amqp://dnvjewjo:X_aKJ-7N8GrSjQu0LUpVugJ_0G57IvHn@prawn.rmq.cloudamqp.com/dnvjewjo'
+const url = 'amqp://localhost'
 let {rmqio} = require('../dist')
 
 rmqio = rmqio({url})
@@ -8,7 +8,9 @@ rmqio
   .start()
   .then(async () => {
     const res = await rmqio.publish({
-      hello: 'world'
+      content: {
+        hello: 'world'
+      }
     }, 'test')
     console.log(res)
   })

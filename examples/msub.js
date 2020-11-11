@@ -1,4 +1,4 @@
-const url = 'amqp://dnvjewjo:X_aKJ-7N8GrSjQu0LUpVugJ_0G57IvHn@prawn.rmq.cloudamqp.com/dnvjewjo'
+const url = 'amqp://localhost'
 
 let {rmqio} = require('../dist')
 
