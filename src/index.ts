@@ -17,12 +17,12 @@ declare interface Options {
   persistFileOnConnError?: string
 }
 
-declare type json = {
+export declare type json = {
   [key: string]: any;
 }
-declare type Message = {
+export declare type Message<T> = {
   topic?: string,
-  content: string | json | number
+  content: T
 }
 
 export class RMQ extends events.EventEmitter {
@@ -82,7 +82,10 @@ export class RMQ extends events.EventEmitter {
   /**
    * @param {Message} message
    */
-  publish(message: Message, topic = 'default'): Promise<any> {
+  publish(
+    message: Message<string | json | number>,
+    topic = 'default'
+  ): Promise<any> {
     let buf: Buffer
     if (typeof message.content === "string") {
       buf = Buffer.from(message.content)
