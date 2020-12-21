@@ -6,6 +6,7 @@ import {
 } from './rmqOperations.js'
 
 import * as events from 'events'
+import {listeners} from 'cluster'
 
 // @flow
 let RMQSingleton: RMQ
@@ -43,6 +44,12 @@ export class RMQ extends events.EventEmitter {
     this.prefetchPolicy = options.preFetchingPolicy
     this.heartBeat = options.heartBeat
     this.persistToFile = options.persistFileOnConnError
+    this.subscriptions = []
+  }
+
+  on(ev: string, listener: (...args: any[]) => void): this {
+    this.subscribe(ev)
+    return super.on(ev, listener)
   }
 
   setServiceName(q: string): RMQ {
@@ -55,20 +62,26 @@ export class RMQ extends events.EventEmitter {
     return this
   }
 
-  subscribe(...arg: string[]): RMQ {
+  subscribe(...args: string[]): RMQ {
     if (this.type === 'pub') return
     if (arguments.length === 0) {
       throw new Error('You must be  subscribed to a topic to receive messages')
     }
-    this.subscriptions = arg
+    const unique = args.filter(
+      (a: string) => !this.subscriptions.includes(a)
+    )
+    Array.prototype.push.apply(
+      this.subscriptions,
+      unique
+    )
     return this
   }
 
   /**
- * Valida si el mensaje es registrado
- * @param {Message} message
- * TODO: make an interface definition for a message
- */
+  * Valida si el mensaje es registrado
+  * @param {Message} message
+  * TODO: make an interface definition for a message
+  */
   getValidJSONMessage(message: string): any {
     let jsonMsg
     try {

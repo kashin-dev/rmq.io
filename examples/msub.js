@@ -7,10 +7,6 @@ rmqio = rmqio({
   preFetchingPolicy: 50
 })
 
-rmqio.on('connection', function (socket) {
-  console.log('connected')
-})
-
 rmqio.on('test', function (msg, ack, nack) {
   console.log(msg)
   ack()
@@ -19,8 +15,10 @@ rmqio.on('test', function (msg, ack, nack) {
 rmqio
   .setServiceName('tester')
   .setRoute('test')
-  .subscribe('test')
   .start()
+  .then(() => {
+    console.log("connected")
+  })
 
 process.on('SIGINT', () => {
   rmqio.closeConn(function () {

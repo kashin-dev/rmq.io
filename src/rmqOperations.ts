@@ -16,17 +16,10 @@ let connMsgStream
 let erroneusMsgStream
 
 /**
- * Deprecated, new function is `uvExceptionWithHostPort()`
- * New function added the error description directly
- * from C++. this method for backwards compatibility
- * @param {number} err - A libuv error number
- * @param {string} syscall
- * @param {string} address
- * @param {number} [port]
- * @param {string} [additional]
- * @returns {Error}
+ * Emit an event when a certain mesage arrives
  */
 function bindTo(ee) {
+  console.log(ee.subscriptions)
   for (const ce in ee.subscriptions) {
     chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     chann.consume(ee.queue, function (msg) {
@@ -95,14 +88,13 @@ export function rmqconnect(url, ee, type, hb, pocef) {
           checkQueue(ee.queue)
           bindTo(ee)
         }
-        ee.emit('connection', ee)
         resolve()
       })
     })
   })
 }
 
-export function rmqpublish(exchange: string, topic: string, msg: Buffer) : Promise<any>{
+export function rmqpublish(exchange: string, topic: string, msg: Buffer): Promise<any> {
   return new Promise((resolve, reject) => {
     try {
       chann.publish(exchange, topic, msg, {persistent: true},
@@ -118,7 +110,7 @@ export function rmqpublish(exchange: string, topic: string, msg: Buffer) : Promi
   })
 }
 
-export function rmqclose(cb:any) : void {
+export function rmqclose(cb: any): void {
   erroneusMsgStream.end()
   connMsgStream.end()
   conn.close(function () {
