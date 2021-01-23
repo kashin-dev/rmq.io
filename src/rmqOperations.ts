@@ -99,7 +99,7 @@ export function rmqconnect(url, ee, type, hb, pocef) {
           checkQueue(ee.queue)
           bindTo(ee)
         }
-        resolve()
+        resolve(true)
       })
     })
   })
