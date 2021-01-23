@@ -1,4 +1,4 @@
-const url = 'amqp://localhost'
+const url = 'amqps://localhost'
 let {rmqio} = require('../dist')
 
 rmqio = rmqio({url})
@@ -7,12 +7,18 @@ rmqio
   .setRoute('test')
   .start()
   .then(async () => {
-    const res = await rmqio.publish({
+    const resAck = await rmqio.publish({
       content: {
-        hello: 'world'
+        hello: 'ack'
       }
-    }, 'test')
-    console.log(res)
+    }, 'ack')
+    console.log(resAck)
+    const resNack = await rmqio.publish({
+      content: {
+        hello: 'nack'
+      }
+    }, 'nack')
+    console.log(resNack)
   })
 
 process.on('SIGINT', () => {

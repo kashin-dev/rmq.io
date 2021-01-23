@@ -1,4 +1,4 @@
-const url = 'amqp://localhost'
+const url = 'amqps://localhost'
 
 let {rmqio} = require('../dist')
 
@@ -7,9 +7,13 @@ rmqio = rmqio({
   preFetchingPolicy: 50
 })
 
-rmqio.on('test', function (msg, ack, nack) {
+rmqio.on('ack', async function (msg, ack, nack) {
   console.log(msg)
-  ack()
+  await ack()
+})
+rmqio.on('nack', async function (msg, ack, nack) {
+  console.log(msg)
+  await nack("error")
 })
 
 rmqio

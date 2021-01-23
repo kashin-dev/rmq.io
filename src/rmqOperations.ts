@@ -19,7 +19,7 @@ let erroneusMsgStream
  * Emit an event when a certain mesage arrives
  */
 function bindTo(ee) {
-  console.log(ee.subscriptions)
+  //console.log(ee.subscriptions)
   for (const ce in ee.subscriptions) {
     chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     chann.consume(ee.queue, function (msg) {
@@ -32,11 +32,22 @@ function bindTo(ee) {
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
-        () => {chann.ack(msg)},
-        () => {chann.reject(msg)}
+        async () => {chann.ack(msg)},
+        async (errorTopic = "") => {await nack(ee.exchange, errorTopic, chann, msg)}
       )
     }, {noAck: false})
   }
+}
+
+async function nack(exchange, topic = "", chann, msg) {
+  if (topic === "") {
+    chann.reject(msg)
+    return
+  }
+
+  const buffMsg = Buffer.from(msg.content.toString())
+  await rmqpublish(exchange, topic, buffMsg)
+  chann.ack(msg)
 }
 
 /**
