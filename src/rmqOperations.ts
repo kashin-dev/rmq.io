@@ -1,34 +1,44 @@
-import * as fs from 'fs'
-import * as amqp from 'amqplib/callback_api'
+import {
+  connect,
+  Connection,
+  Channel,
+} from 'amqplib'
+import {
+  RMQ,
+  ConnectionType,
+  json,
+  Message
+} from './index'
+import {
+  MsgBadFormat,
+  FailedConnection
+} from './rmq_error'
 
-let conn: any
-let chann: any
+import log from './logger'
+const logger = log()
 
-export const rmqconfig = {
-  RECONN_TIMEOUT: 5000,
-  PREFETCH: 10,
-  HEARTBEAT: 60,
-  CONN_ERROR_LOG: './msgBackUp.log',
-  MSG_ERROR_LOG: './erroneusMsgs.log'
-}
+let conn: Connection
+let chann: Channel
 
-let connMsgStream
-let erroneusMsgStream
+export const RECONN_TIMEOUT = 5000
+export const PREFETCH = 10
+export const HEARTBEAT = 60
 
 /**
  * Emit an event when a certain mesage arrives
  */
-function bindTo(ee) {
-  //console.log(ee.subscriptions)
+const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
-    chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
+    await chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     chann.consume(ee.queue, function (msg) {
+
       const parsedMsg = parseMsg(msg)
       if (!parsedMsg) {
-        // deflected messages that are not json
-        deflectErroneusMessage(msg)
-        return
+        throw new MsgBadFormat("Bad format message")
       }
+      if (ee.log)
+        logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`)
+
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
@@ -39,160 +49,102 @@ function bindTo(ee) {
   }
 }
 
-async function nack(exchange, topic = "", chann, msg) {
+const nack = async (
+  exchange: string,
+  topic = "",
+  chann: Channel,
+  msg: any
+) => {
   if (topic === "") {
     chann.reject(msg)
     return
   }
 
   const buffMsg = Buffer.from(msg.content.toString())
-  await rmqpublish(exchange, topic, buffMsg)
+  rmqpublish(exchange, topic, buffMsg)
   chann.ack(msg)
 }
 
-/**
- * Conecta a la cola
- * @param url
- * @param ee
- * @param type
- * @param hb
- * @param pocef
- * @returns {Promise<any>}
- */
-export function rmqconnect(url, ee, type, hb, pocef) {
+export const rmqconnect = async (
+  url: string,
+  ee: RMQ,
+  type: ConnectionType,
+  hb: number
+): Promise<void> => {
+
+  conn = await connect(url + '?heartbeat=' + hb)
+  conn.on('error', (err) => {
+    if (err.message !== 'Connection closing') {
+      throw new FailedConnection(err)
+    }
+  })
+
+  //conn.on('close', () => {})
+  if (ee.log)
+    logger.info(`Connected to RabbitMQ`)
+
+
+  chann = await conn.createConfirmChannel()
+  checkExchange(ee.exchange)
+  if (type === 'sub') {
+    checkQueue(ee.queue)
+    bindTo(ee)
+  }
+}
+
+export const rmqpublish = (
+  exchange: string,
+  topic: string,
+  msg: Buffer
+): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (conn && chann) {
-      reject(new Error('[AMQP] conn y chann are not set'))
-      return
-    }
-
-    createDeflectorStream()
-    createConnErrStream(pocef)
-    amqp.connect(url + '?heartbeat=' + hb, function (err0, connection) {
-      if (err0) {
-        console.error('[AMQP]', err0)
-        return setTimeout(rmqconnect, rmqconfig.RECONN_TIMEOUT)
-      }
-
-      conn = connection
-
-      conn.on('error', function (err) {
-        if (err.message !== 'Connection closing') {
-          console.error('[AMQP] conn error', err)
-          reject(new Error(`[AMQP] conn error ${err}`))
-        }
-      })
-
-      conn.on('close', function () {
-        console.error('[AMQP] reconnecting')
-        return setTimeout(rmqconnect, rmqconfig.RECONN_TIMEOUT)
-      })
-
-      conn.createConfirmChannel(function (err1, channel) {
-        if (closeOnErr(err1)) {
-          reject(new Error(`[AMQP] conn error ${err1}`))
-          return
-        }
-        chann = channel
-        checkExchange(ee.exchange)
-        if (type === 'sub') {
-          checkQueue(ee.queue)
-          bindTo(ee)
-        }
-        resolve(true)
-      })
-    })
-  })
-}
-
-export function rmqpublish(exchange: string, topic: string, msg: Buffer): Promise<any> {
-  return new Promise((resolve, reject) => {
-    try {
-      chann.publish(exchange, topic, msg, {persistent: true},
-        function (err, ok) {
-          if (err) {
-            reject(err)
-          }
-          resolve(true)
-        })
-    } catch (e) {
-      reject(e)
+    if (chann.publish(exchange, topic, msg, {persistent: true})) {
+      resolve(true)
+    } else {
+      reject()
     }
   })
 }
 
-export function rmqclose(cb: any): void {
-  erroneusMsgStream.end()
-  connMsgStream.end()
-  conn.close(function () {
-    cb()
-  })
+export const rmqclose = async (
+  cb: (...params: any[]) => any
+): Promise<void> => {
+  cb()
+  await conn.close()
 }
 
-function createConnErrStream(file) {
-  connMsgStream = fs.createWriteStream(file, {
-    flags: 'a'
-  })
+const checkQueue = async (q: string) => {
+  chann.prefetch(PREFETCH)
+  try {
+    await chann.assertQueue(q, {durable: true})
+  } catch (e) {
+    closeOnErr(e)
+    throw e
+  }
 }
 
-// eslint-disable-next-line no-unused-vars
-function saveConnErrMessage(msg) {
-  connMsgStream.write(
-    msg.content.toString() + ' ' +
-    JSON.stringify(msg.fields) + '\n'
-  )
-  chann.ack(msg)
-}
-
-function createDeflectorStream() {
-  erroneusMsgStream = fs.createWriteStream(rmqconfig.MSG_ERROR_LOG, {
-    flags: 'a'
-  })
-}
-
-function deflectErroneusMessage(msg) {
-  erroneusMsgStream.write(
-    msg.content.toString() + ' ' +
-    JSON.stringify(msg.fields) + '\n'
-  )
-  chann.ack(msg)
-}
-
-function checkQueue(q) {
-  chann.prefetch(rmqconfig.PREFETCH)
-  chann.assertQueue(q, {
-    durable: true,
-    function(err, _ok) {
-      closeOnErr(err)
-    }
-  })
-}
-
-function checkExchange(ex) {
+const checkExchange = async (ex: string) => {
   if (!ex) return
-  chann.assertExchange(ex, 'direct', {
+  await chann.assertExchange(ex, 'direct', {
     durable: true
   })
 }
 
-function closeOnErr(err) {
+const closeOnErr = async (err: Error) => {
   if (!err) return false
-  console.error('[AMQP] error', err)
-  conn.close()
-  return true
+  await conn.close()
 }
 
-function parseMsg(msg) {
-  let content: string
-  let result
-  try {
-    content = msg.content.toString()
-    result = JSON.parse(content)
-    if (typeof result === 'number') {throw new Error('Message invalid type number')}
-    if (result instanceof Array) {throw new Error('Message invalid type Array')}
-  } catch (e) {
-    console.error(e)
-    result = null
+const parseMsg = (msg: Message<json>): json => {
+
+  const content = msg.content.toString()
+  const result = JSON.parse(content)
+
+  if (typeof result === 'number') {
+    throw new MsgBadFormat('Message invalid type number')
+  }
+  if (result instanceof Array) {
+    throw new MsgBadFormat('Message invalid type Array')
   }
   return result
 }

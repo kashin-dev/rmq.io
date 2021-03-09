@@ -2,20 +2,28 @@ import {
   rmqconnect,
   rmqpublish,
   rmqclose,
-  rmqconfig
+  PREFETCH,
+  HEARTBEAT,
+  RECONN_TIMEOUT
 } from './rmqOperations.js'
 
 import * as events from 'events'
 import {listeners} from 'cluster'
+import log from './logger'
+const logger = log()
 
-// @flow
+
 let RMQSingleton: RMQ
+
+export declare type ConnectionType = "pub" | "sub"
+
 declare interface Options {
   url: string,
   reconnTime?: number,
   preFetchingPolicy?: number,
   heartBeat?: number,
   persistFileOnConnError?: string
+  log?: boolean
 }
 
 export declare type json = {
@@ -28,15 +36,22 @@ export declare type Message<T> = {
 
 export class RMQ extends events.EventEmitter {
   private url: string
-  private queue: string
-  private subscriptions: string[]
-  private exchange: string
+  public queue: string
+  public subscriptions: string[]
+  public exchange: string
   private type: 'pub' | 'sub'
   private reconnTime: number
   private prefetchPolicy: number
   private heartBeat: number
   private persistToFile: string
+  public log: boolean
 
+  /**
+   * Creates the base object for rmq.io.
+   *
+   * @param {Options} options
+   * @package
+   */
   constructor(options: Options) {
     super()
     this.url = options.url
@@ -45,24 +60,56 @@ export class RMQ extends events.EventEmitter {
     this.heartBeat = options.heartBeat
     this.persistToFile = options.persistFileOnConnError
     this.subscriptions = []
+    this.log = options.log
   }
 
+  /**
+   * Creates a listener to a RabbitMQ topic. You will receive messages here for one topic.
+   *
+   * @param {string} ev
+   * @public
+   */
   on(ev: string, listener: (...args: any[]) => void): this {
     this.subscribe(ev)
+    if (this.log)
+      logger.info(`Subscribed to ${ev}`)
+
     return super.on(ev, listener)
   }
 
+  /**
+     * A service must have a name, so that a work queue is created for it to listen to arriving messages.
+     *
+     * @param {string} q
+     * @return self
+     * @public
+     */
   setServiceName(q: string): RMQ {
     this.queue = q
     return this
   }
 
+
+  /**
+     * To publish messages you need an exchange name(we call it route), this exchange is used as the broker between several services connected to the same route.
+     *
+     * @param {string} e
+     * @return self
+     * @public
+     */
   setRoute(e: string): RMQ {
     this.exchange = e
     return this
   }
 
-  subscribe(...args: string[]): RMQ {
+  /**
+       * Support methos for the on listener definition method.
+       *
+       * @param {string[]} args
+       * @return self
+       * @private
+       */
+  private subscribe(...args: string[]): RMQ {
     if (this.type === 'pub') return
     if (arguments.length === 0) {
       throw new Error('You must be  subscribed to a topic to receive messages')
@@ -70,6 +117,7 @@ export class RMQ extends events.EventEmitter {
     const unique = args.filter(
       (a: string) => !this.subscriptions.includes(a)
     )
+
     Array.prototype.push.apply(
       this.subscriptions,
       unique
@@ -78,12 +126,15 @@ export class RMQ extends events.EventEmitter {
   }
 
   /**
-  * Valida si el mensaje es registrado
-  * @param {Message} message
-  * TODO: make an interface definition for a message
-  */
-  getValidJSONMessage(message: string): any {
-    let jsonMsg
+       * Checks if a msg is valid json.
+       *
+       * @param {string} message
+       * @return json
+       * @private
+       */
+
+  private getValidJSONMessage(message: string): string {
+    let jsonMsg: string
     try {
       jsonMsg = JSON.stringify(message)
     } catch (e) {
@@ -93,8 +144,12 @@ export class RMQ extends events.EventEmitter {
   }
 
   /**
-   * @param {Message} message
-   */
+       * Publish a message, you have to set topic and content of the message
+       *
+       * @param {Message<T>} message
+       * @return Promise
+       * @public
+       */
   publish(
     message: Message<string | json | number>,
     topic = 'default'
@@ -118,13 +173,33 @@ export class RMQ extends events.EventEmitter {
     if (message.topic)
       topic = message.topic
 
+    if (this.log)
+      logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`)
+
     return rmqpublish(this.exchange, topic, buf)
   }
 
-  closeConn(cb: any): void {
-    rmqclose(cb)
+  /**
+        * Close the connection with RabbitMQ. You can set a callback to be excetuded.
+        *
+        * @param {any[]} params
+        * @return Promise
+        * @public
+        */
+  async closeConn(
+    cb: (...params: any[]) => any
+  ): Promise<void> {
+    if (this.log)
+      logger.info("Closing connection")
+    await rmqclose(cb)
   }
 
+  /**
+          * Start to listen for messages.
+          *
+          * @return Promise
+          * @public
+          */
   start(): Promise<any> {
     if (!this.queue && !this.exchange) {
       throw new Error('An exchange defined is mandatory for this library')
@@ -132,12 +207,13 @@ export class RMQ extends events.EventEmitter {
     if (this.queue && !this.subscriptions) {
       throw new Error('Subscribe to some topics')
     }
+    if (this.log)
+      logger.info("Connecting")
     return rmqconnect(
       this.url,
       this,
       (!this.queue) ? 'pub' : 'sub',
       this.heartBeat,
-      this.persistToFile
     )
     // return this
   }
@@ -151,20 +227,21 @@ export function rmqio(opt: Options): RMQ {
   const options: Options = opt
 
   options.reconnTime =
-    options.reconnTime || rmqconfig.RECONN_TIMEOUT
+    options.reconnTime || RECONN_TIMEOUT
   options.preFetchingPolicy =
-    options.preFetchingPolicy || rmqconfig.PREFETCH
+    options.preFetchingPolicy || PREFETCH
   options.heartBeat =
-    options.heartBeat || rmqconfig.HEARTBEAT
-  options.persistFileOnConnError =
-    options.persistFileOnConnError || rmqconfig.CONN_ERROR_LOG
+    options.heartBeat || HEARTBEAT
+  options.persistFileOnConnError = null
+  options.log = options.log || false
   /**
    * {
    *  url:,
    *  reconnTime:,
    *  preFetchPolicy:,
    *  heartBeat:,
-   *  persistFileOnConnError:
+   *  persistFileOnConnError:,
+   *  log:
    * }
    */
   if (!RMQSingleton) {RMQSingleton = new RMQ(options)}
