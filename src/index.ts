@@ -8,7 +8,6 @@ import {
 } from './rmqOperations.js'
 
 import * as events from 'events'
-import {listeners} from 'cluster'
 import log from './logger'
 const logger = log()
 
@@ -24,6 +23,7 @@ declare interface Options {
   heartBeat?: number,
   persistFileOnConnError?: string
   log?: boolean
+  quorumQueuesEnabled?: boolean
 }
 
 export declare type json = {
@@ -45,6 +45,7 @@ export class RMQ extends events.EventEmitter {
   private heartBeat: number
   private persistToFile: string
   public log: boolean
+  public quorumQueuesEnabled: boolean
 
   /**
    * Creates the base object for rmq.io.
@@ -61,6 +62,7 @@ export class RMQ extends events.EventEmitter {
     this.persistToFile = options.persistFileOnConnError
     this.subscriptions = []
     this.log = options.log
+    this.quorumQueuesEnabled = options.quorumQueuesEnabled
   }
 
   /**
@@ -214,6 +216,7 @@ export class RMQ extends events.EventEmitter {
       this,
       (!this.queue) ? 'pub' : 'sub',
       this.heartBeat,
+      this.quorumQueuesEnabled
     )
     // return this
   }
@@ -234,6 +237,7 @@ export function rmqio(opt: Options): RMQ {
     options.heartBeat || HEARTBEAT
   options.persistFileOnConnError = null
   options.log = options.log || false
+  options.quorumQueuesEnabled = options.quorumQueuesEnabled || false
   /**
    * {
    *  url:,

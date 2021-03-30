@@ -69,7 +69,8 @@ export const rmqconnect = async (
   url: string,
   ee: RMQ,
   type: ConnectionType,
-  hb: number
+  hb: number,
+  qqe: boolean
 ): Promise<void> => {
 
   conn = await connect(url + '?heartbeat=' + hb)
@@ -87,7 +88,7 @@ export const rmqconnect = async (
   chann = await conn.createConfirmChannel()
   checkExchange(ee.exchange)
   if (type === 'sub') {
-    checkQueue(ee.queue)
+    checkQueue(ee.queue, qqe)
     bindTo(ee)
   }
 }
@@ -113,10 +114,29 @@ export const rmqclose = async (
   await conn.close()
 }
 
-const checkQueue = async (q: string) => {
+const checkQueue = async (q: string, qqe: boolean) => {
   chann.prefetch(PREFETCH)
+  const options = {
+    durable: true,
+  }
+
+  if (qqe) {
+    Object.defineProperty(
+      options,
+      "arguments",
+      {
+        value: { // for dedicated plans xD
+          "x-queue-type": "quorum"
+        }
+      }
+    )
+  }
+
   try {
-    await chann.assertQueue(q, {durable: true})
+    await chann.assertQueue(
+      q,
+      options
+    )
   } catch (e) {
     closeOnErr(e)
     throw e
