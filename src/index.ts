@@ -41,9 +41,9 @@ export class RMQ extends events.EventEmitter {
   public exchange: string
   private type: 'pub' | 'sub'
   private reconnTime: number
-  private prefetchPolicy: number
-  private heartBeat: number
-  private persistToFile: string
+  public prefetchPolicy: number
+  public heartBeat: number
+  public persistToFile: string
   public log: boolean
   public quorumQueuesEnabled: boolean
 

@@ -7,12 +7,14 @@ rmqio
   .setRoute('test')
   .start()
   .then(async () => {
-    const resAck = await rmqio.publish({
-      content: {
-        hello: 'ack'
-      }
-    }, 'ack')
-    console.log(resAck)
+    for (let i = 0; i < 20; i++) {
+      const resAck = await rmqio.publish({
+        content: {
+          hello: `ack-${i}`
+        }
+      }, 'ack')
+      console.log(resAck)
+    }
     const resNack = await rmqio.publish({
       content: {
         hello: 'nack'

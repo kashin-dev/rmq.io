@@ -17,8 +17,10 @@ import {
 import log from './logger'
 const logger = log()
 
-let conn: Connection
-let chann: Channel
+let pubConn: Connection
+let subConn: Connection
+let pubChann: Channel
+let subChann: Channel
 
 export const RECONN_TIMEOUT = 5000
 export const PREFETCH = 10
@@ -29,8 +31,8 @@ export const HEARTBEAT = 60
  */
 const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
-    await chann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
-    chann.consume(ee.queue, function (msg) {
+    await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
+    subChann.consume(ee.queue, function (msg) {
 
       const parsedMsg = parseMsg(msg)
       if (!parsedMsg) {
@@ -42,8 +44,8 @@ const bindTo = async (ee: RMQ) => {
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
-        async () => {chann.ack(msg)},
-        async (errorTopic = "") => {await nack(ee.exchange, errorTopic, chann, msg)}
+        async () => {subChann.ack(msg)},
+        async (errorTopic = "") => {await nack(ee.exchange, errorTopic, subChann, msg)}
       )
     }, {noAck: false})
   }
@@ -73,8 +75,8 @@ export const rmqconnect = async (
   qqe: boolean
 ): Promise<void> => {
 
-  conn = await connect(url + '?heartbeat=' + hb)
-  conn.on('error', (err) => {
+  pubConn = await connect(url)
+  pubConn.on('error', (err) => {
     if (err.message !== 'Connection closing') {
       throw new FailedConnection(err)
     }
@@ -85,10 +87,13 @@ export const rmqconnect = async (
     logger.info(`Connected to RabbitMQ`)
 
 
-  chann = await conn.createConfirmChannel()
+  pubChann = await pubConn.createConfirmChannel()
   checkExchange(ee.exchange)
   if (type === 'sub') {
-    checkQueue(ee.queue, qqe)
+    subConn = await connect(url)
+    subChann = await subConn.createChannel()
+    checkExchange(ee.exchange)
+    checkQueue(ee.queue, qqe, ee.prefetchPolicy)
     bindTo(ee)
   }
 }
@@ -99,7 +104,7 @@ export const rmqpublish = (
   msg: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (chann.publish(exchange, topic, msg, {persistent: true})) {
+    if (pubChann.publish(exchange, topic, msg, {persistent: true})) {
       resolve(true)
     } else {
       reject()
@@ -111,11 +116,12 @@ export const rmqclose = async (
   cb: (...params: any[]) => any
 ): Promise<void> => {
   cb()
-  await conn.close()
+  await pubConn.close()
+  await subConn.close()
 }
 
-const checkQueue = async (q: string, qqe: boolean) => {
-  chann.prefetch(PREFETCH)
+const checkQueue = async (q: string, qqe: boolean, prefetch: number) => {
+  subChann.prefetch(prefetch)
   const options = {
     durable: true,
   }
@@ -133,7 +139,7 @@ const checkQueue = async (q: string, qqe: boolean) => {
   }
 
   try {
-    await chann.assertQueue(
+    await subChann.assertQueue(
       q,
       options
     )
@@ -145,14 +151,15 @@ const checkQueue = async (q: string, qqe: boolean) => {
 
 const checkExchange = async (ex: string) => {
   if (!ex) return
-  await chann.assertExchange(ex, 'direct', {
+  await pubChann.assertExchange(ex, 'direct', {
     durable: true
   })
 }
 
 const closeOnErr = async (err: Error) => {
   if (!err) return false
-  await conn.close()
+  await pubConn.close()
+  await subConn.close()
 }
 
 const parseMsg = (msg: Message<json>): json => {

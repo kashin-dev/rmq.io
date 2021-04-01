@@ -39,8 +39,8 @@
   "author": "Tex",
   "license": "MIT",
   "dependencies": {
-    "@types/amqplib": "^0.5.15",
-    "amqplib": "^0.5.5",
+    "@types/amqplib": "^0.5.17",
+    "amqplib": "^0.7.1",
     "pino": "^6.11.1"
   },
   "devDependencies": {

@@ -6,7 +6,7 @@ rmqio = rmqio({
   url: url,
   preFetchingPolicy: 50,
   log: true,
-  quorumQueuesEnabled: true
+  //quorumQueuesEnabled: true
 })
 
 rmqio.on('ack', async function (msg, ack, nack) {
