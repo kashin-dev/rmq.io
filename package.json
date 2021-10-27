@@ -11,7 +11,6 @@
     "dev-build": "nodemon",
     "start": "node --inspect=5858 -r ts-node/register ./src/index.ts",
     "test": "jest",
-    "flow": "flow",
     "lint": "nxp eslint --ext .ts src/ tests/ --fix",
     "pub": "node ./examples/mpub.js",
     "sub": "node ./examples/msub.js"
@@ -39,6 +38,7 @@
   "author": "Tex",
   "license": "MIT",
   "dependencies": {
+    "@msgpack/msgpack": "^2.7.1",
     "@types/amqplib": "^0.5.17",
     "amqplib": "^0.7.1",
     "pino": "^6.11.1"
@@ -48,7 +48,7 @@
     "@types/pino": "^6.3.6",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.6.0",
-    "concurrently": "^5.1.0",
+    "concurrently": "^6.3.0",
     "eslint": "^7.12.1",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.1",
@@ -56,7 +56,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "jest": "^26.5.3",
+    "jest": "^27.3.1",
     "nodemon": "^2.0.5",
     "pino-pretty": "^4.3.0",
     "ts-node": "^9.0.0",

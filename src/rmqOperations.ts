@@ -13,7 +13,7 @@ import {
   MsgBadFormat,
   FailedConnection
 } from './rmq_error'
-
+import {decode} from "@msgpack/msgpack"
 import log from './logger'
 const logger = log()
 
@@ -34,7 +34,7 @@ const bindTo = async (ee: RMQ) => {
     await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     subChann.consume(ee.queue, function (msg) {
 
-      const parsedMsg = parseMsg(msg)
+      const parsedMsg = parseMsg(msg, ee.binarySerialization)
       if (!parsedMsg) {
         throw new MsgBadFormat("Bad format message")
       }
@@ -162,11 +162,16 @@ const closeOnErr = async (err: Error) => {
   await subConn.close()
 }
 
-const parseMsg = (msg: Message<json>): json => {
-
-  const content = msg.content.toString()
-  const result = JSON.parse(content)
-
+const parseMsg = (msg: Message<json | Buffer>, binarySerialized: boolean): json => {
+  let result: json = {}
+  if (binarySerialized) {
+    const content = msg.content as Buffer
+    result = decode(content)
+  } else {
+    msg.content as json
+    const content = msg.content.toString()
+    result = JSON.parse(content)
+  }
   if (typeof result === 'number') {
     throw new MsgBadFormat('Message invalid type number')
   }

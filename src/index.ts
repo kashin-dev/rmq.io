@@ -6,6 +6,7 @@ import {
   HEARTBEAT,
   RECONN_TIMEOUT
 } from './rmqOperations.js'
+import {encode} from "@msgpack/msgpack"
 
 import * as events from 'events'
 import log from './logger'
@@ -24,6 +25,7 @@ declare interface Options {
   persistFileOnConnError?: string
   log?: boolean
   quorumQueuesEnabled?: boolean
+  binarySerialization?: boolean
 }
 
 export declare type json = {
@@ -46,6 +48,7 @@ export class RMQ extends events.EventEmitter {
   public persistToFile: string
   public log: boolean
   public quorumQueuesEnabled: boolean
+  public binarySerialization: boolean
 
   /**
    * Creates the base object for rmq.io.
@@ -63,6 +66,7 @@ export class RMQ extends events.EventEmitter {
     this.subscriptions = []
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
+    this.binarySerialization = options.binarySerialization
   }
 
   /**
@@ -163,15 +167,19 @@ export class RMQ extends events.EventEmitter {
       buf = Buffer.from(
         message.content.toString()
       )
+    }
+
+    if (this.binarySerialization) {
+      const encoded = encode(message.content)
+      buf = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
     } else {
-      //JSON 
+      //raw strings transmited through the wire
       buf = Buffer.from(
         JSON.stringify(
           <json>message.content
         )
       )
     }
-
     if (message.topic)
       topic = message.topic
 
@@ -238,6 +246,7 @@ export function rmqio(opt: Options): RMQ {
   options.persistFileOnConnError = null
   options.log = options.log || false
   options.quorumQueuesEnabled = options.quorumQueuesEnabled || false
+  options.binarySerialization = options.binarySerialization || false
   /**
    * {
    *  url:,

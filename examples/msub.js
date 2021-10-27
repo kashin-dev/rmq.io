@@ -1,4 +1,4 @@
-const url = 'amqps://localhost'
+const url = 'amqp://localhost'
 
 let {rmqio} = require('../dist')
 
@@ -6,6 +6,7 @@ rmqio = rmqio({
   url: url,
   preFetchingPolicy: 50,
   log: true,
+  binarySerialization: true
   //quorumQueuesEnabled: true
 })
 
