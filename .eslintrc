@@ -1,12 +1,24 @@
 {
-  "root": true,
+    "env": {
+        "es2021": true,
+        "node": true,
+        "jest": true
+    },
+    "extends": [
+        "standard"
+    ],
     "parser": "@typescript-eslint/parser",
-      "plugins": [
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "unused-imports",
         "@typescript-eslint"
-      ],
-        "extends": [
-          "eslint:recommended",
-          "plugin:@typescript-eslint/eslint-recommended",
-          "plugin:@typescript-eslint/recommended"
-        ]
+    ],
+    "rules": {
+		"unused-imports/no-unused-imports": "error",
+		"no-unused-vars": "warn",
+        "no-useless-escape": "off"
+    }
 }
