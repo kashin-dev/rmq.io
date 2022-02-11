@@ -6,7 +6,7 @@ enum ERROR_CODES {
 
 class RMQError extends Error {
   private code: number
-  constructor(code: number, ...params: string[]) {
+  constructor (code: number, ...params: string[]) {
     super(...params)
 
     if (Error.captureStackTrace) {
@@ -16,15 +16,14 @@ class RMQError extends Error {
   }
 }
 
-
 export class MsgBadFormat extends RMQError {
-  constructor(...msg: string[]) {
+  constructor (...msg: string[]) {
     super(ERROR_CODES.MSG_BAD_FORMAT, ...msg)
   }
 }
 
 export class FailedConnection extends RMQError {
-  constructor(...msg: string[]) {
+  constructor (...msg: string[]) {
     super(ERROR_CODES.FAILED_CONNECTION, ...msg)
   }
 }
