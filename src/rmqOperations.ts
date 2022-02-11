@@ -24,7 +24,7 @@ let subChann: Channel
 
 export const RECONN_TIMEOUT = 5000
 export const PREFETCH = 10
-export const HEARTBEAT = 60
+export const HEARTBEAT = 0
 
 /**
  * Emit an event when a certain mesage arrives
