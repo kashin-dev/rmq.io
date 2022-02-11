@@ -1,13 +1,16 @@
-const url = 'amqps://localhost'
+const url = 'amqp://localhost'
 let {rmqio} = require('../dist')
 
-rmqio = rmqio({url})
+rmqio = rmqio({
+  url,
+  binarySerialization: true
+})
 
 rmqio
   .setRoute('test')
   .start()
   .then(async () => {
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 1; i++) {
       const resAck = await rmqio.publish({
         content: {
           hello: `ack-${i}`

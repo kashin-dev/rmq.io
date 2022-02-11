@@ -11,7 +11,8 @@ import log from './logger'
 import {
   FailedConnection, MsgBadFormat
 } from './rmq_error'
-
+import { decode } from '@msgpack/msgpack'
+import log from './logger'
 const logger = log()
 
 let pubConn: Connection
@@ -21,7 +22,7 @@ let subChann: Channel
 
 export const RECONN_TIMEOUT = 5000
 export const PREFETCH = 10
-export const HEARTBEAT = 60
+export const HEARTBEAT = 0
 
 /**
  * Emit an event when a certain mesage arrives
@@ -30,7 +31,7 @@ const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
     await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     subChann.consume(ee.queue, function (msg) {
-      const parsedMsg = parseMsg(msg)
+      const parsedMsg = parseMsg(msg, ee.binarySerialization)
       if (!parsedMsg) {
         throw new MsgBadFormat('Bad format message')
       }
@@ -154,10 +155,16 @@ const closeOnErr = async (err: Error) => {
   await subConn.close()
 }
 
-const parseMsg = (msg: Message<json>): json => {
-  const content = msg.content.toString()
-  const result = JSON.parse(content)
-
+const parseMsg = (msg: Message<json | Buffer>, binarySerialized: boolean): json => {
+  let result: json = {}
+  if (binarySerialized) {
+    const contentBinary = msg.content as Buffer
+    result = decode(contentBinary)
+  } else {
+    msg.content as json
+    const content = msg.content.toString()
+    result = JSON.parse(content)
+  }
   if (typeof result === 'number') {
     throw new MsgBadFormat('Message invalid type number')
   }
