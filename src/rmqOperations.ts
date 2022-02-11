@@ -7,11 +7,10 @@ import {
   json,
   Message, RMQ
 } from './index'
-import log from './logger'
 import {
   FailedConnection, MsgBadFormat
 } from './rmq_error'
-import { decode } from '@msgpack/msgpack'
+import {decode} from '@msgpack/msgpack'
 import log from './logger'
 const logger = log()
 
@@ -35,15 +34,15 @@ const bindTo = async (ee: RMQ) => {
       if (!parsedMsg) {
         throw new MsgBadFormat('Bad format message')
       }
-      if (ee.log) { logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`) }
+      if (ee.log) {logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`)}
 
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
-        async () => { subChann.ack(msg) },
-        async (errorTopic = '') => { await nack(ee.exchange, errorTopic, subChann, msg) }
+        async () => {subChann.ack(msg)},
+        async (errorTopic = '') => {await nack(ee.exchange, errorTopic, subChann, msg)}
       )
-    }, { noAck: false })
+    }, {noAck: false})
   }
 }
 
@@ -78,7 +77,7 @@ export const rmqconnect = async (
   })
 
   // conn.on('close', () => {})
-  if (ee.log) { logger.info('Connected to RabbitMQ') }
+  if (ee.log) {logger.info('Connected to RabbitMQ')}
 
   pubChann = await pubConn.createConfirmChannel()
   checkExchange(ee.exchange)
@@ -97,7 +96,7 @@ export const rmqpublish = (
   msg: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, msg, { persistent: true })) {
+    if (pubChann.publish(exchange, topic, msg, {persistent: true})) {
       resolve(true)
     } else {
       reject(new Error())
