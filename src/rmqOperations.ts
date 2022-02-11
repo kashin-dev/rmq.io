@@ -1,20 +1,17 @@
 import {
-  connect,
-  Connection,
-  Channel,
+  Channel, connect,
+  Connection
 } from 'amqplib'
 import {
-  RMQ,
   ConnectionType,
   json,
-  Message
+  Message, RMQ
 } from './index'
+import log from './logger'
 import {
-  MsgBadFormat,
-  FailedConnection
+  FailedConnection, MsgBadFormat
 } from './rmq_error'
 
-import log from './logger'
 const logger = log()
 
 let pubConn: Connection
@@ -33,31 +30,29 @@ const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
     await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     subChann.consume(ee.queue, function (msg) {
-
       const parsedMsg = parseMsg(msg)
       if (!parsedMsg) {
-        throw new MsgBadFormat("Bad format message")
+        throw new MsgBadFormat('Bad format message')
       }
-      if (ee.log)
-        logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`)
+      if (ee.log) { logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`) }
 
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
-        async () => {subChann.ack(msg)},
-        async (errorTopic = "") => {await nack(ee.exchange, errorTopic, subChann, msg)}
+        async () => { subChann.ack(msg) },
+        async (errorTopic = '') => { await nack(ee.exchange, errorTopic, subChann, msg) }
       )
-    }, {noAck: false})
+    }, { noAck: false })
   }
 }
 
 const nack = async (
   exchange: string,
-  topic = "",
+  topic = '',
   chann: Channel,
   msg: any
 ) => {
-  if (topic === "") {
+  if (topic === '') {
     chann.reject(msg)
     return
   }
@@ -74,7 +69,6 @@ export const rmqconnect = async (
   hb: number,
   qqe: boolean
 ): Promise<void> => {
-
   pubConn = await connect(url)
   pubConn.on('error', (err) => {
     if (err.message !== 'Connection closing') {
@@ -82,10 +76,8 @@ export const rmqconnect = async (
     }
   })
 
-  //conn.on('close', () => {})
-  if (ee.log)
-    logger.info(`Connected to RabbitMQ`)
-
+  // conn.on('close', () => {})
+  if (ee.log) { logger.info('Connected to RabbitMQ') }
 
   pubChann = await pubConn.createConfirmChannel()
   checkExchange(ee.exchange)
@@ -104,10 +96,10 @@ export const rmqpublish = (
   msg: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, msg, {persistent: true})) {
+    if (pubChann.publish(exchange, topic, msg, { persistent: true })) {
       resolve(true)
     } else {
-      reject()
+      reject(new Error())
     }
   })
 }
@@ -123,16 +115,16 @@ export const rmqclose = async (
 const checkQueue = async (q: string, qqe: boolean, prefetch: number) => {
   subChann.prefetch(prefetch)
   const options = {
-    durable: true,
+    durable: true
   }
 
   if (qqe) {
     Object.defineProperty(
       options,
-      "arguments",
+      'arguments',
       {
         value: { // for dedicated plans xD
-          "x-queue-type": "quorum"
+          'x-queue-type': 'quorum'
         }
       }
     )
@@ -163,7 +155,6 @@ const closeOnErr = async (err: Error) => {
 }
 
 const parseMsg = (msg: Message<json>): json => {
-
   const content = msg.content.toString()
   const result = JSON.parse(content)
 
