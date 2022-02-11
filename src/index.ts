@@ -6,7 +6,7 @@ import {
   HEARTBEAT,
   RECONN_TIMEOUT
 } from './rmqOperations.js'
-import {encode} from "@msgpack/msgpack"
+import { encode } from '@msgpack/msgpack'
 
 import * as events from 'events'
 import log from './logger'
@@ -139,14 +139,13 @@ export class RMQ extends events.EventEmitter {
        * @private
        */
 
-  private getValidJSONMessage(message: string): string {
-    let jsonMsg: string
+  private getValidJSONMessage (message: string): string {
     try {
-      jsonMsg = JSON.stringify(message)
+      const jsonMsg = JSON.stringify(message)
+      return jsonMsg
     } catch (e) {
       throw new Error('The message is not valid JSON')
     }
-    return jsonMsg
   }
 
   /**
@@ -173,18 +172,17 @@ export class RMQ extends events.EventEmitter {
       const encoded = encode(message.content)
       buf = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
     } else {
-      //raw strings transmited through the wire
+      // raw strings transmited through the wire
       buf = Buffer.from(
         JSON.stringify(
           <json>message.content
         )
       )
     }
-    if (message.topic)
+    if (message.topic) {
       topic = message.topic
-
-    if (this.log)
-      logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`)
+    }
+    if (this.log) { logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`) }
 
     return rmqpublish(this.exchange, topic, buf)
   }
