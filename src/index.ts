@@ -4,6 +4,7 @@ import {
   HEARTBEAT, PREFETCH, RECONN_TIMEOUT, rmqclose, rmqconnect,
   rmqpublish
 } from './rmqOperations.js'
+import { encode } from '@msgpack/msgpack'
 
 const logger = log()
 
@@ -17,6 +18,7 @@ declare interface Options {
   persistFileOnConnError?: string
   log?: boolean
   quorumQueuesEnabled?: boolean
+  binarySerialization?: boolean
 }
 
 export declare type json = {
@@ -39,6 +41,7 @@ export class RMQ extends events.EventEmitter {
   public persistToFile: string
   public log: boolean
   public quorumQueuesEnabled: boolean
+  public binarySerialization: boolean
 
   /**
    * Creates the base object for rmq.io.
@@ -56,6 +59,7 @@ export class RMQ extends events.EventEmitter {
     this.subscriptions = []
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
+    this.binarySerialization = options.binarySerialization
   }
 
   /**
@@ -127,13 +131,12 @@ export class RMQ extends events.EventEmitter {
        */
 
   private getValidJSONMessage (message: string): string {
-    let jsonMsg: string
     try {
-      jsonMsg = JSON.stringify(message)
+      const jsonMsg = JSON.stringify(message)
+      return jsonMsg
     } catch (e) {
       throw new Error('The message is not valid JSON')
     }
-    return jsonMsg
   }
 
   /**
@@ -154,17 +157,22 @@ export class RMQ extends events.EventEmitter {
       buf = Buffer.from(
         message.content.toString()
       )
+    }
+
+    if (this.binarySerialization) {
+      const encoded = encode(message.content)
+      buf = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
     } else {
-      // JSON
+      // raw strings transmited through the wire
       buf = Buffer.from(
         JSON.stringify(
           <json>message.content
         )
       )
     }
-
-    if (message.topic) { topic = message.topic }
-
+    if (message.topic) {
+      topic = message.topic
+    }
     if (this.log) { logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`) }
 
     return rmqpublish(this.exchange, topic, buf)
@@ -227,6 +235,7 @@ export function rmqio (opt: Options): RMQ {
   options.persistFileOnConnError = null
   options.log = options.log || false
   options.quorumQueuesEnabled = options.quorumQueuesEnabled || false
+  options.binarySerialization = options.binarySerialization || false
   /**
    * {
    *  url:,
