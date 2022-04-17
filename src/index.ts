@@ -4,7 +4,7 @@ import {
   HEARTBEAT, PREFETCH, RECONN_TIMEOUT, rmqclose, rmqconnect,
   rmqpublish
 } from './rmqOperations.js'
-import { encode } from '@msgpack/msgpack'
+import {encode} from '@msgpack/msgpack'
 
 const logger = log()
 
@@ -49,7 +49,7 @@ export class RMQ extends events.EventEmitter {
    * @param {Options} options
    * @package
    */
-  constructor (options: Options) {
+  constructor(options: Options) {
     super()
     this.url = options.url
     this.reconnTime = options.reconnTime
@@ -68,9 +68,9 @@ export class RMQ extends events.EventEmitter {
    * @param {string} ev
    * @public
    */
-  on (ev: string, listener: (...args: any[]) => void): this {
+  on(ev: string, listener: (...args: any[]) => void): this {
     this.subscribe(ev)
-    if (this.log) { logger.info(`Subscribed to ${ev}`) }
+    if (this.log) {logger.info(`Subscribed to ${ev}`)}
 
     return super.on(ev, listener)
   }
@@ -82,7 +82,7 @@ export class RMQ extends events.EventEmitter {
      * @return self
      * @public
      */
-  setServiceName (q: string): RMQ {
+  setServiceName(q: string): RMQ {
     this.queue = q
     return this
   }
@@ -94,7 +94,7 @@ export class RMQ extends events.EventEmitter {
      * @return self
      * @public
      */
-  setRoute (e: string): RMQ {
+  setRoute(e: string): RMQ {
     this.exchange = e
     return this
   }
@@ -106,7 +106,7 @@ export class RMQ extends events.EventEmitter {
        * @return self
        * @private
        */
-  private subscribe (...args: string[]): RMQ {
+  private subscribe(...args: string[]): RMQ {
     if (this.type === 'pub') return
     if (arguments.length === 0) {
       throw new Error('You must be  subscribed to a topic to receive messages')
@@ -130,7 +130,7 @@ export class RMQ extends events.EventEmitter {
        * @private
        */
 
-  private getValidJSONMessage (message: string): string {
+  private getValidJSONMessage(message: string): string {
     try {
       const jsonMsg = JSON.stringify(message)
       return jsonMsg
@@ -146,7 +146,7 @@ export class RMQ extends events.EventEmitter {
        * @return Promise
        * @public
        */
-  publish (
+  publish(
     message: Message<string | json | number>,
     topic = 'default'
   ): Promise<any> {
@@ -173,7 +173,7 @@ export class RMQ extends events.EventEmitter {
     if (message.topic) {
       topic = message.topic
     }
-    if (this.log) { logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`) }
+    if (this.log) {logger.info(`Publish message ${JSON.stringify(message.content)} with topic ${topic}`)}
 
     return rmqpublish(this.exchange, topic, buf)
   }
@@ -185,10 +185,10 @@ export class RMQ extends events.EventEmitter {
         * @return Promise
         * @public
         */
-  async closeConn (
+  async closeConn(
     cb: (...params: any[]) => any
   ): Promise<void> {
-    if (this.log) { logger.info('Closing connection') }
+    if (this.log) {logger.info('Closing connection')}
     await rmqclose(cb)
   }
 
@@ -198,14 +198,14 @@ export class RMQ extends events.EventEmitter {
           * @return Promise
           * @public
           */
-  start (): Promise<any> {
+  start(): Promise<any> {
     if (!this.queue && !this.exchange) {
       throw new Error('An exchange defined is mandatory for this library')
     }
     if (this.queue && !this.subscriptions) {
       throw new Error('Subscribe to some topics')
     }
-    if (this.log) { logger.info('Connecting') }
+    if (this.log) {logger.info('Connecting')}
     return rmqconnect(
       this.url,
       this,
@@ -219,7 +219,7 @@ export class RMQ extends events.EventEmitter {
 
 let RMQSingleton: RMQ
 
-export function rmqio (opt: Options): RMQ {
+export function rmqio(opt: Options): RMQ {
   if (RMQSingleton) {
     return RMQSingleton
   }
@@ -246,7 +246,7 @@ export function rmqio (opt: Options): RMQ {
    *  log:
    * }
    */
-  if (!RMQSingleton) { RMQSingleton = new RMQ(options) }
+  if (!RMQSingleton) {RMQSingleton = new RMQ(options)}
 
   return RMQSingleton
 }
