@@ -30,12 +30,13 @@ const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
     await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
     subChann.consume(ee.queue, function (msg) {
-      const parsedMsg = parseMsg(msg, ee.binarySerialization)
-      if (!parsedMsg) {
-        throw new MsgBadFormat('Bad format message')
+      let parsedMsg: json
+      try {
+        parsedMsg = parseMsg(msg, ee.binarySerialization)
+      } catch (e) {
+        throw new MsgBadFormat('Failed to parse msg')
       }
-      if (ee.log) {logger.info(`Received a message with content ${JSON.stringify(parsedMsg)}`)}
-
+      if (ee.log) {logger.info(msg, 'parsedMsg')}
       ee.emit(
         msg.fields.routingKey,
         parsedMsg,
