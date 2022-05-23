@@ -1,20 +1,20 @@
 const url = 'amqp://localhost'
 
-let {rmqio} = require('../dist')
+let { rmqio } = require('../dist')
 
 rmqio = rmqio({
-  url: url,
+  url,
   preFetchingPolicy: 50,
   log: true,
   binarySerialization: true
-  //quorumQueuesEnabled: true
+  // quorumQueuesEnabled: true
 })
 
 rmqio.on('ack', async function (msg, ack, nack) {
   await ack()
 })
 rmqio.on('nack', async function (msg, ack, nack) {
-  await nack("error")
+  await nack('error')
 })
 
 rmqio
