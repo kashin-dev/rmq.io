@@ -11,7 +11,7 @@
     "dev-build": "nodemon",
     "start": "node --inspect=5858 -r ts-node/register ./src/index.ts",
     "test": "jest",
-    "lint": "nxp eslint --ext .ts src/ tests/ --fix",
+    "lint": "npx eslint --ext .ts src/ --fix",
     "pub": "node ./examples/mpub.js",
     "sub": "node ./examples/msub.js"
   },
@@ -50,14 +50,17 @@
     "@typescript-eslint/parser": "^4.6.0",
     "concurrently": "^6.3.0",
     "eslint": "^7.12.1",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^27.3.1",
     "nodemon": "^2.0.5",
     "pino-pretty": "^4.3.0",
+    "prettier": "^2.6.2",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5"
   }

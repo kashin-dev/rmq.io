@@ -1,16 +1,7 @@
-import {
-  Channel, connect,
-  Connection
-} from 'amqplib'
-import {
-  ConnectionType,
-  json,
-  Message, RMQ
-} from './index'
-import {
-  FailedConnection, MsgBadFormat
-} from './rmq_error'
-import {decode} from '@msgpack/msgpack'
+import { Channel, connect, Connection } from 'amqplib'
+import { ConnectionType, json, Message, RMQ } from './index'
+import { FailedConnection, MsgBadFormat } from './rmq_error'
+import { decode } from '@msgpack/msgpack'
 import log from './logger'
 const logger = log()
 
@@ -29,32 +20,38 @@ export const HEARTBEAT = 0
 const bindTo = async (ee: RMQ) => {
   for (const ce in ee.subscriptions) {
     await subChann.bindQueue(ee.queue, ee.exchange, ee.subscriptions[ce])
-    subChann.consume(ee.queue, function (msg) {
-      let parsedMsg: json
-      try {
-        parsedMsg = parseMsg(msg, ee.binarySerialization)
-      } catch (e) {
-        throw new MsgBadFormat('Failed to parse msg')
-      }
-      if (ee.log) {logger.info(msg, 'parsedMsg')}
-      ee.emit(
-        msg.fields.routingKey,
-        parsedMsg,
-        async () => {subChann.ack(msg)},
-        async (errorTopic = '') => {await nack(ee.exchange, errorTopic, subChann, msg)}
-      )
-    }, {noAck: false})
+    subChann.consume(
+      ee.queue,
+      function (msg) {
+        let parsedMsg: json
+        try {
+          parsedMsg = parseMsg(msg, ee.binarySerialization)
+        } catch (e) {
+          throw new MsgBadFormat('Failed to parse msg')
+        }
+        if (ee.log) {
+          logger.info(msg, 'parsedMsg')
+        }
+        ee.emit(
+          msg.fields.routingKey,
+          parsedMsg,
+          async () => {
+            subChann.ack(msg)
+          },
+          async (errorTopic = '') => {
+            await nack(ee.exchange, errorTopic, subChann, msg)
+          }
+        )
+      },
+      { noAck: false }
+    )
   }
 }
 
-const nack = async (
-  exchange: string,
-  topic = '',
-  chann: Channel,
-  msg: any
-) => {
+const nack = async (exchange: string, topic = '', chann: Channel, msg: any) => {
   if (topic === '') {
     chann.reject(msg)
+
     return
   }
 
@@ -71,14 +68,16 @@ export const rmqconnect = async (
   qqe: boolean
 ): Promise<void> => {
   pubConn = await connect(url)
-  pubConn.on('error', (err) => {
+  pubConn.on('error', err => {
     if (err.message !== 'Connection closing') {
       throw new FailedConnection(err)
     }
   })
 
   // conn.on('close', () => {})
-  if (ee.log) {logger.info('Connected to RabbitMQ')}
+  if (ee.log) {
+    logger.info('Connected to RabbitMQ')
+  }
 
   pubChann = await pubConn.createConfirmChannel()
   checkExchange(ee.exchange)
@@ -97,7 +96,7 @@ export const rmqpublish = (
   msg: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, msg, {persistent: true})) {
+    if (pubChann.publish(exchange, topic, msg, { persistent: true })) {
       resolve(true)
     } else {
       reject(new Error())
@@ -120,22 +119,16 @@ const checkQueue = async (q: string, qqe: boolean, prefetch: number) => {
   }
 
   if (qqe) {
-    Object.defineProperty(
-      options,
-      'arguments',
-      {
-        value: { // for dedicated plans xD
-          'x-queue-type': 'quorum'
-        }
+    Object.defineProperty(options, 'arguments', {
+      value: {
+        // for dedicated plans xD
+        'x-queue-type': 'quorum'
       }
-    )
+    })
   }
 
   try {
-    await subChann.assertQueue(
-      q,
-      options
-    )
+    await subChann.assertQueue(q, options)
   } catch (e) {
     closeOnErr(e)
     throw e
@@ -155,7 +148,10 @@ const closeOnErr = async (err: Error) => {
   await subConn.close()
 }
 
-const parseMsg = (msg: Message<json | Buffer>, binarySerialized: boolean): json => {
+const parseMsg = (
+  msg: Message<json | Buffer>,
+  binarySerialized: boolean
+): json => {
   let result: json = {}
   if (binarySerialized) {
     const contentBinary = msg.content as Buffer
@@ -171,5 +167,6 @@ const parseMsg = (msg: Message<json | Buffer>, binarySerialized: boolean): json 
   if (result instanceof Array) {
     throw new MsgBadFormat('Message invalid type Array')
   }
+
   return result
 }
