@@ -1,6 +1,6 @@
 import { Channel, connect, Connection } from 'amqplib'
 import { ConnectionType, json, Message, RMQ } from './index'
-import { FailedConnection, MsgBadFormat } from './rmq_error'
+import { FailedConnection, MsgBadFormat } from './rmqError'
 import { decode } from '@msgpack/msgpack'
 import log from './logger'
 const logger = log()
