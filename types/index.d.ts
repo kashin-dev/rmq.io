@@ -1,1 +1,1 @@
-export function rmqio(opt: any): any;
+export function rmqio(opt: any): any

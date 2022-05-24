@@ -1,30 +1,29 @@
 const url = 'amqp://localhost'
+const { rmqio } = require('../dist')
 
-let {rmqio} = require('../dist')
-
-rmqio = rmqio({
-  url: url,
+const rmq = rmqio({
+  url,
   preFetchingPolicy: 50,
   log: true,
   binarySerialization: true
-  //quorumQueuesEnabled: true
+  // quorumQueuesEnabled: true
 })
 
-rmqio.on('ack', async function (msg, ack, nack) {
+rmq.on('ack', async function (msg, ack, nack) {
   await ack()
 })
-rmqio.on('nack', async function (msg, ack, nack) {
-  await nack("error")
+rmq.on('nack', async function (msg, ack, nack) {
+  await nack('error')
 })
 
-rmqio
+rmq
   .setServiceName('tester')
   .setRoute('test')
   .start()
   .then(() => {})
 
 process.on('SIGINT', () => {
-  rmqio.closeConn(function () {
+  rmq.closeConn(function () {
     process.exit(1)
   })
 })
