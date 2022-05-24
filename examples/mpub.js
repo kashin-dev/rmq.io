@@ -1,33 +1,39 @@
 const url = 'amqp://localhost'
-let {rmqio} = require('../dist')
+const { rmqio } = require('../dist')
 
-rmqio = rmqio({
+const rmq = rmqio({
   url,
   binarySerialization: true
 })
 
-rmqio
+rmq
   .setRoute('test')
   .start()
   .then(async () => {
     for (let i = 0; i < 1; i++) {
-      const resAck = await rmqio.publish({
-        content: {
-          hello: `ack-${i}`
-        }
-      }, 'ack')
+      const resAck = await rmq.publish(
+        {
+          content: {
+            hello: `ack-${i}`
+          }
+        },
+        'ack'
+      )
       console.log(resAck)
     }
-    const resNack = await rmqio.publish({
-      content: {
-        hello: 'nack'
-      }
-    }, 'nack')
+    const resNack = await rmq.publish(
+      {
+        content: {
+          hello: 'nack'
+        }
+      },
+      'nack'
+    )
     console.log(resNack)
   })
 
 process.on('SIGINT', () => {
-  rmqio.closeConn(function () {
+  rmq.closeConn(function () {
     process.exit(1)
   })
 })

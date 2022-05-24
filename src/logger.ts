@@ -5,5 +5,6 @@ export default (): pino.Logger => {
   if (!logger) {
     logger = pino()
   }
+
   return logger
 }
