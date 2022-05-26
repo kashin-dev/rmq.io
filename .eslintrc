@@ -68,6 +68,6 @@
       "error",
       "as-needed"
     ],
-    "no-shadow": "error"
+    "@typescript-eslint/no-shadow": ["error"]
   }
 }
