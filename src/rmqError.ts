@@ -5,6 +5,7 @@ enum ERROR_CODES {
 
 class RMQError extends Error {
   private code: number
+
   constructor(code: number, ...params: string[]) {
     super(...params)
 
