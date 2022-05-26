@@ -6,8 +6,8 @@ const rmq = rmqio({
   binarySerialization: true
 })
 
-const runTest = (args) => {
-  console.log("This is a test")
+const runTest = args => {
+  console.log('This is a test')
 }
 
 rmq
