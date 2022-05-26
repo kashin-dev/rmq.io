@@ -22,9 +22,6 @@ jobs:
       - name: Set npm token
         run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}
 
-      - name: Set npm registry
-        run: npm config set registry https://npm.pkg.github.com/kashin-dev
-
       - name: Install Node.js dependencies
         run: npm install
 
