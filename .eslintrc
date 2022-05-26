@@ -1,6 +1,7 @@
 {
   "env": {
-    "node": true
+    "node": true,
+    "jest": true
   },
   "root": true,
   "parser": "@typescript-eslint/parser",
@@ -45,7 +46,10 @@
       "error",
       "always"
     ],
-    "object-shorthand": ["error", "always"],
+    "object-shorthand": [
+      "error",
+      "always"
+    ],
     "prefer-const": "error",
     "prettier/prettier": [
       "error",
@@ -63,6 +67,7 @@
     "radix": [
       "error",
       "as-needed"
-    ]
+    ],
+    "no-shadow": "error"
   }
 }
