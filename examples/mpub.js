@@ -1,10 +1,14 @@
-const url = 'amqp://localhost'
+const url = 'amqp://guest:guest@localhost:5672'
 const { rmqio } = require('../dist')
 
 const rmq = rmqio({
   url,
   binarySerialization: true
 })
+
+const runTest = (args) => {
+  console.log("This is a test")
+}
 
 rmq
   .setRoute('test')
@@ -17,7 +21,8 @@ rmq
             hello: `ack-${i}`
           }
         },
-        'ack'
+        'ack',
+        runTest
       )
       console.log(resAck)
     }
