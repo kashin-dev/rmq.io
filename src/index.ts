@@ -153,7 +153,8 @@ export class RMQ extends events.EventEmitter {
    */
   publish(
     message: Message<string | json | number>,
-    topic = 'default'
+    topic = 'default',
+    cb?: (args?: Record<string, unknown>) => void
   ): Promise<any> {
     let buf: Buffer
     if (typeof message.content === 'string') {
@@ -178,7 +179,7 @@ export class RMQ extends events.EventEmitter {
       )
     }
 
-    return rmqpublish(this.exchange, topic, buf)
+    return rmqpublish(this.exchange, topic, buf, cb)
   }
 
   /**
