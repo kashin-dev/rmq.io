@@ -1,7 +1,7 @@
-const url = 'amqp://localhost'
+const url = 'amqp://guest:guest@localhost:5672'
 const { rmqio } = require('../dist')
 
-const rmq = rmqio({
+const connection = rmqio({
   url,
   preFetchingPolicy: 50,
   log: true,
@@ -9,21 +9,21 @@ const rmq = rmqio({
   // quorumQueuesEnabled: true
 })
 
-rmq.on('ack', async function (msg, ack, nack) {
+connection.on('ack', async function (msg, ack, nack) {
   await ack()
 })
-rmq.on('nack', async function (msg, ack, nack) {
+connection.on('nack', async function (msg, ack, nack) {
   await nack('error')
 })
 
-rmq
+connection
   .setServiceName('tester')
-  .setRoute('test')
+  .setRoute('kashin staging')
   .start()
-  .then(() => {})
+  .then((res) => {console.log(res)}).catch(err=>console.log(err))
 
 process.on('SIGINT', () => {
-  rmq.closeConn(function () {
+  connection.closeConn(function () {
     process.exit(1)
   })
 })
