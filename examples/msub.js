@@ -20,7 +20,12 @@ rmq
   .setServiceName('tester')
   .setRoute('test')
   .start()
-  .then(() => {})
+  .then(res => {
+    console.log(res)
+  })
+  .catch(err => {
+    console.log(err)
+  })
 
 process.on('SIGINT', () => {
   rmq.closeConn(function () {
