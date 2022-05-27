@@ -93,10 +93,10 @@ export const rmqconnect = async (
 export const rmqpublish = (
   exchange: string,
   topic: string,
-  msg: Buffer
+  buffer: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, msg, { persistent: true })) {
+    if (pubChann.publish(exchange, topic, buffer, { persistent: true })) {
       resolve(true)
     } else {
       reject(new Error())

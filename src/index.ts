@@ -72,7 +72,10 @@ export class RMQ extends events.EventEmitter {
    * @param {string} ev
    * @public
    */
-  on(ev: string, listener: (...args: any[]) => void): this {
+  on<T extends Record<string, unknown>>(
+    ev: string,
+    listener: (args: T) => void
+  ): this {
     this.subscribe(ev)
     if (this.log) {
       logger.info(`Subscribed to ${ev}`)
@@ -155,19 +158,19 @@ export class RMQ extends events.EventEmitter {
     message: Message<string | json | number>,
     topic = 'default'
   ): Promise<any> {
-    let buf: Buffer
+    let buffer: Buffer
     if (typeof message.content === 'string') {
-      buf = Buffer.from(message.content)
+      buffer = Buffer.from(message.content)
     } else if (typeof message.content === 'number') {
-      buf = Buffer.from(message.content.toString())
+      buffer = Buffer.from(message.content.toString())
     }
 
     if (this.binarySerialization) {
       const encoded = encode(message.content)
-      buf = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
+      buffer = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
     } else {
       // raw strings transmited through the wire
-      buf = Buffer.from(JSON.stringify(<json>message.content))
+      buffer = Buffer.from(JSON.stringify(<json>message.content))
     }
     if (message.topic) {
       topic = message.topic
@@ -178,7 +181,9 @@ export class RMQ extends events.EventEmitter {
       )
     }
 
-    return rmqpublish(this.exchange, topic, buf)
+    super.emit("runCallback", message)
+
+    return rmqpublish(this.exchange, topic, buffer)
   }
 
   /**
