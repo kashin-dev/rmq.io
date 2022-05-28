@@ -167,7 +167,11 @@ export class RMQ extends events.EventEmitter {
 
     if (this.binarySerialization) {
       const encoded = encode(message.content)
-      buffer = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
+      buffer = Buffer.from(
+        encoded.buffer,
+        encoded.byteOffset,
+        encoded.byteLength
+      )
     } else {
       // raw strings transmited through the wire
       buffer = Buffer.from(JSON.stringify(<json>message.content))
@@ -181,7 +185,7 @@ export class RMQ extends events.EventEmitter {
       )
     }
 
-    super.emit("runCallback", message)
+    super.emit('runCallback', message)
 
     return rmqpublish(this.exchange, topic, buffer)
   }

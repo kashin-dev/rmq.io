@@ -11,14 +11,14 @@ rmq
   .start()
   .then(async () => {
     for (let i = 0; i < 1; i++) {
-      rmq.on("runCallback", (args) => {
-        console.log("The callback was called using the argument: ", args)
+      rmq.on('runCallback', args => {
+        console.log('The callback was called using the argument: ', args)
       })
       const resAck = await rmq.publish(
         {
           content: {
             hello: `ack-${i}`
-          },
+          }
         },
         'ack'
       )
