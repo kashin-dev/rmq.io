@@ -1,5 +1,5 @@
 const url = 'amqp://localhost'
-const { rmqio } = require('../dist')
+const {rmqio} = require('../dist')
 
 const rmq = rmqio({
   url,
