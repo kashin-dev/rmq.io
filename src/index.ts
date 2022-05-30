@@ -46,6 +46,7 @@ export class RMQ extends events.EventEmitter {
   public log: boolean
   public quorumQueuesEnabled: boolean
   public binarySerialization: boolean
+  private hooks = new Map()
 
   /**
    * Creates the base object for rmq.io.
@@ -64,6 +65,24 @@ export class RMQ extends events.EventEmitter {
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
     this.binarySerialization = options.binarySerialization
+    this.hooks.set('publish', Symbol())
+    this.hooks.set('consume', Symbol())
+    this.hooks.set('prePublish', Symbol())
+    this.hooks.set('preConsume', Symbol())
+    this.hooks.set('start', Symbol())
+    this.hooks.set('stop', Symbol())
+  }
+
+  addHook<T extends Record<string, unknown>>(
+    hookName: string,
+    listener: (args: T) => void
+  ) {
+    if (!this.hooks.get(hookName))
+      throw new Error(
+        `Hook not found use any of ${(this, Array.from(this.hooks.keys()))}`
+      )
+
+    this.on(this.hooks.get(hookName), listener)
   }
 
   /**
@@ -73,12 +92,13 @@ export class RMQ extends events.EventEmitter {
    * @public
    */
   on<T extends Record<string, unknown>>(
-    ev: string,
+    ev: string | symbol,
     listener: (args: T) => void
   ): this {
-    this.subscribe(ev)
-    if (this.log) {
-      logger.info(`Subscribed to ${ev}`)
+    if (typeof ev !== 'symbol') this.subscribe(ev as string)
+
+    if (this.log && typeof ev !== 'symbol') {
+      logger.info(`Subscribed to ${ev as string}`)
     }
 
     return super.on(ev, listener)
@@ -185,7 +205,7 @@ export class RMQ extends events.EventEmitter {
       )
     }
 
-    super.emit('runCallback', message)
+    this.emit(this.hooks.get('publish'), { message: message.content, topic })
 
     return rmqpublish(this.exchange, topic, buffer)
   }
@@ -202,6 +222,7 @@ export class RMQ extends events.EventEmitter {
       logger.info('Closing connection')
     }
     await rmqclose(cb)
+    this.emit(this.hooks.get('stop'))
   }
 
   /**
@@ -220,6 +241,11 @@ export class RMQ extends events.EventEmitter {
     if (this.log) {
       logger.info('Connecting')
     }
+
+    this.emit(this.hooks.get('start'), {
+      queue: this.queue,
+      exchange: this.exchange
+    })
 
     return rmqconnect(
       this.url,
