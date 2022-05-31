@@ -1,5 +1,5 @@
 import { Channel, connect, Connection } from 'amqplib'
-import { ConnectionType, json, Message, RMQ } from './index'
+import { ConnectionType, Message, RMQ } from './index'
 import { FailedConnection, MsgBadFormat } from './rmqError'
 import { decode } from '@msgpack/msgpack'
 import log from './logger'
@@ -13,6 +13,8 @@ let subChann: Channel
 export const RECONN_TIMEOUT = 5000
 export const PREFETCH = 10
 export const HEARTBEAT = 0
+
+export type json = Record<string, unknown>
 
 /**
  * Emit an event when a certain mesage arrives
@@ -155,7 +157,7 @@ const parseMsg = (
   let result: json = {}
   if (binarySerialized) {
     const contentBinary = msg.content as Buffer
-    result = decode(contentBinary)
+    result = decode(contentBinary) as json
   } else {
     msg.content as json
     const content = msg.content.toString()
