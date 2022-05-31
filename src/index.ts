@@ -80,9 +80,7 @@ export class RMQ extends events.EventEmitter {
     listener: (args: T) => Promise<S> | S
   ) {
     if (!this.hooks.get(hookName))
-      throw new Error(
-        `Hook not found use any of ${hooks}`
-      )
+      throw new Error(`Hook not found use any of ${hooks}`)
 
     this.on(this.hooks.get(hookName), listener)
   }
@@ -188,8 +186,7 @@ export class RMQ extends events.EventEmitter {
       }
     }
 
-    if (message.topic)
-      topic = message.topic
+    if (message.topic) topic = message.topic
 
     this.emit(this.hooks.get('publish'), { message, topic })
 
