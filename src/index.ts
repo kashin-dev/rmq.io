@@ -11,6 +11,14 @@ import {
 import { encode } from '@msgpack/msgpack'
 
 const logger = log()
+const hooks = [
+  'publish',
+  'consume',
+  'prePublish',
+  'preConsume',
+  'start',
+  'stop'
+]
 
 export declare type ConnectionType = 'pub' | 'sub'
 
@@ -25,14 +33,14 @@ declare interface Options {
   binarySerialization?: boolean
 }
 
-export declare type json = {
-  [key: string]: any
-}
 export declare type Message<T> = {
-  topic?: string
   content: T
 }
 
+type Publish = {
+  message: Message<string | Record<string, unknown> | number>,
+  topic: string
+}
 export class RMQ extends events.EventEmitter {
   private url: string
   public queue: string
@@ -65,21 +73,16 @@ export class RMQ extends events.EventEmitter {
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
     this.binarySerialization = options.binarySerialization
-    this.hooks.set('publish', Symbol())
-    this.hooks.set('consume', Symbol())
-    this.hooks.set('prePublish', Symbol())
-    this.hooks.set('preConsume', Symbol())
-    this.hooks.set('start', Symbol())
-    this.hooks.set('stop', Symbol())
+    hooks.forEach(hook => this.hooks.set(hook, Symbol()))
   }
 
-  addHook<T extends Record<string, unknown>>(
+  addHook<T extends Record<string, unknown>, S = unknown>(
     hookName: string,
-    listener: (args: T) => void
+    listener: (args: T) => Promise<S> | S
   ) {
     if (!this.hooks.get(hookName))
       throw new Error(
-        `Hook not found use any of ${(this, Array.from(this.hooks.keys()))}`
+        `Hook not found use any of ${hooks}`
       )
 
     this.on(this.hooks.get(hookName), listener)
@@ -150,35 +153,22 @@ export class RMQ extends events.EventEmitter {
   }
 
   /**
-   * Checks if a msg is valid json.
-   *
-   * @param {string} message
-   * @return json
-   * @private
-   */
-
-  private getValidJSONMessage(message: string): string {
-    try {
-      const jsonMsg = JSON.stringify(message)
-
-      return jsonMsg
-    } catch (e) {
-      throw new Error('The message is not valid JSON')
-    }
-  }
-
-  /**
    * Publish a message, you have to set topic and content of the message
    *
-   * @param {Message<T>} message
+   * @param {Publish} args
    * @return Promise
    * @public
    */
-  publish(
-    message: Message<string | json | number>,
-    topic = 'default'
-  ): Promise<any> {
+  publish(args: Publish): Promise<boolean> {
+    const { message, topic } = args
     let buffer: Buffer
+
+    if (this.log) {
+      logger.info(
+        `Publish message ${JSON.stringify(message.content)} with topic ${topic}`
+      )
+    }
+
     if (typeof message.content === 'string') {
       buffer = Buffer.from(message.content)
     } else if (typeof message.content === 'number') {
@@ -194,18 +184,11 @@ export class RMQ extends events.EventEmitter {
       )
     } else {
       // raw strings transmited through the wire
-      buffer = Buffer.from(JSON.stringify(<json>message.content))
-    }
-    if (message.topic) {
-      topic = message.topic
-    }
-    if (this.log) {
-      logger.info(
-        `Publish message ${JSON.stringify(message.content)} with topic ${topic}`
-      )
+      buffer = Buffer.from(JSON.stringify(message.content))
     }
 
-    this.emit(this.hooks.get('publish'), { message: message.content, topic })
+
+    this.emit(this.hooks.get('publish'), { message, topic })
 
     return rmqpublish(this.exchange, topic, buffer)
   }
