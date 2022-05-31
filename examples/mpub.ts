@@ -1,61 +1,61 @@
-import { rmqio } from "../dist";
+import { rmqio } from '../dist'
 
-const url = "amqp://localhost";
+const url = 'amqp://localhost'
 const rmq = rmqio({
   url,
-  binarySerialization: true,
-});
+  binarySerialization: true
+})
 
 type json = {
-  [key: string]: any;
-};
+  [key: string]: any
+}
 type Message<T> = {
-  content: T;
-};
+  content: T
+}
 type Publish = {
-  message: Message<string | json | number>;
-  topic: string;
-};
+  message: Message<string | json | number>
+  topic: string
+}
 
-rmq.addHook<Publish>("publish", async ({ message, topic }) => {
-  console.log("inicia");
-  console.log(message);
-  console.log(topic);
+rmq.addHook<Publish>('publish', async ({ message, topic }) => {
+  console.log('inicia')
+  console.log(message)
+  console.log(topic)
 
-  let res = await new Promise((resolve, reject) => {
+  const res = await new Promise((resolve, reject) => {
     setTimeout(function () {
-      resolve("¡Éxito!");
-    }, 500);
-  });
+      resolve('¡Éxito!')
+    }, 500)
+  })
 
-  console.log(res);
-});
+  console.log(res)
+})
 
 rmq
-  .setRoute("test")
+  .setRoute('test')
   .start()
   .then(async () => {
     for (let i = 0; i < 1; i++) {
       const resAck = await rmq.publish(
         {
           content: {
-            hello: "ack",
-          },
+            hello: 'ack'
+          }
         },
-        "Default"
-      );
-      console.log(resAck);
+        'Default'
+      )
+      console.log(resAck)
     }
     const resNack = await rmq.publish({
       content: {
-        hello: "nack",
-      },
-    });
-    console.log(resNack);
-  });
+        hello: 'nack'
+      }
+    })
+    console.log(resNack)
+  })
 
-process.on("SIGINT", () => {
+process.on('SIGINT', () => {
   rmq.closeConn(function () {
-    process.exit(1);
-  });
-});
+    process.exit(1)
+  })
+})
