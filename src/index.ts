@@ -35,12 +35,11 @@ declare interface Options {
 
 export declare type Message<T> = {
   content: T
+  topic?: string
 }
 
-type Publish = {
-  message: Message<string | Record<string, unknown> | number>,
-  topic: string
-}
+export type json = Record<string, unknown>
+
 export class RMQ extends events.EventEmitter {
   private url: string
   public queue: string
@@ -73,7 +72,7 @@ export class RMQ extends events.EventEmitter {
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
     this.binarySerialization = options.binarySerialization
-    hooks.forEach(hook => this.hooks.set(hook, Symbol()))
+    hooks.forEach(hook => this.hooks.set(hook, Symbol('')))
   }
 
   addHook<T extends Record<string, unknown>, S = unknown>(
@@ -155,24 +154,20 @@ export class RMQ extends events.EventEmitter {
   /**
    * Publish a message, you have to set topic and content of the message
    *
-   * @param {Publish} args
+   * @param {Message<T>} message
    * @return Promise
    * @public
    */
-  publish(args: Publish): Promise<boolean> {
-    const { message, topic } = args
+  publish(
+    message: Message<string | json | number>,
+    topic = 'default'
+  ): Promise<boolean> {
     let buffer: Buffer
 
     if (this.log) {
       logger.info(
         `Publish message ${JSON.stringify(message.content)} with topic ${topic}`
       )
-    }
-
-    if (typeof message.content === 'string') {
-      buffer = Buffer.from(message.content)
-    } else if (typeof message.content === 'number') {
-      buffer = Buffer.from(message.content.toString())
     }
 
     if (this.binarySerialization) {
@@ -184,9 +179,17 @@ export class RMQ extends events.EventEmitter {
       )
     } else {
       // raw strings transmited through the wire
-      buffer = Buffer.from(JSON.stringify(message.content))
+      if (typeof message.content === 'string') {
+        buffer = Buffer.from(message.content)
+      } else if (typeof message.content === 'number') {
+        buffer = Buffer.from(message.content.toString())
+      } else if (typeof message.content === 'object') {
+        buffer = Buffer.from(JSON.stringify(message.content))
+      }
     }
 
+    if (message.topic)
+      topic = message.topic
 
     this.emit(this.hooks.get('publish'), { message, topic })
 

@@ -17,16 +17,17 @@ type Publish = {
   topic: string;
 };
 
-rmq.addHook("publish", async () => {
+rmq.addHook<Publish>("publish", async ({ message, topic }) => {
   console.log("inicia");
+  console.log(message);
+  console.log(topic);
 
   let res = await new Promise((resolve, reject) => {
     setTimeout(function () {
-      resolve("¡Éxito!"); // ¡Todo salió bien!
+      resolve("¡Éxito!");
     }, 500);
   });
 
-  console.log("\n\nres");
   console.log(res);
 });
 
@@ -35,23 +36,20 @@ rmq
   .start()
   .then(async () => {
     for (let i = 0; i < 1; i++) {
-      const resAck = await rmq.publish({
-        message: {
+      const resAck = await rmq.publish(
+        {
           content: {
             hello: "ack",
           },
         },
-        topic: "Default",
-      });
+        "Default"
+      );
       console.log(resAck);
     }
     const resNack = await rmq.publish({
-      message: {
-        content: {
-          hello: "nack",
-        },
+      content: {
+        hello: "nack",
       },
-      topic: "nack",
     });
     console.log(resNack);
   });
