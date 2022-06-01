@@ -9,6 +9,10 @@ const rmq = rmqio({
   // quorumQueuesEnabled: true
 })
 
+rmq.addHook('start', data => {
+  console.log('hook', data)
+})
+
 rmq.on('ack', async function (msg, ack, nack) {
   await ack()
 })
@@ -20,7 +24,12 @@ rmq
   .setServiceName('tester')
   .setRoute('test')
   .start()
-  .then(() => {})
+  .then(res => {
+    console.log(res)
+  })
+  .catch(err => {
+    console.log(err)
+  })
 
 process.on('SIGINT', () => {
   rmq.closeConn(function () {

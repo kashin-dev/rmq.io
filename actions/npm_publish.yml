@@ -8,12 +8,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Une Node.js 12
       - uses: actions/setup-node@v1
         with:
           node-version: 12
           registry-url: https://registry.npmjs.org/
-      - run: npm install
-      - run: npm publish --access public
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Npm publish
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

@@ -11,6 +11,14 @@ import {
 import { encode } from '@msgpack/msgpack'
 
 const logger = log()
+const hooks = [
+  'publish',
+  'consume',
+  'prePublish',
+  'preConsume',
+  'start',
+  'stop'
+]
 
 export declare type ConnectionType = 'pub' | 'sub'
 
@@ -25,13 +33,12 @@ declare interface Options {
   binarySerialization?: boolean
 }
 
-export declare type json = {
-  [key: string]: any
-}
 export declare type Message<T> = {
-  topic?: string
   content: T
+  topic?: string
 }
+
+export type json = Record<string, unknown>
 
 export class RMQ extends events.EventEmitter {
   private url: string
@@ -46,6 +53,7 @@ export class RMQ extends events.EventEmitter {
   public log: boolean
   public quorumQueuesEnabled: boolean
   public binarySerialization: boolean
+  private hooks = new Map()
 
   /**
    * Creates the base object for rmq.io.
@@ -64,6 +72,17 @@ export class RMQ extends events.EventEmitter {
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
     this.binarySerialization = options.binarySerialization
+    hooks.forEach(hook => this.hooks.set(hook, Symbol('')))
+  }
+
+  addHook<T extends Record<string, unknown>, S = unknown>(
+    hookName: string,
+    listener: (args: T) => Promise<S> | S
+  ): void {
+    if (!this.hooks.get(hookName))
+      throw new Error(`Hook not found use any of ${hooks}`)
+
+    this.on(this.hooks.get(hookName), listener)
   }
 
   /**
@@ -72,11 +91,14 @@ export class RMQ extends events.EventEmitter {
    * @param {string} ev
    * @public
    */
-  on(ev: string, listener: (...args: any[]) => void): this {
-    this.subscribe(ev)
-    if (this.log) {
-      logger.info(`Subscribed to ${ev}`)
-    }
+  on<T extends Record<string, unknown>>(
+    ev: string | symbol,
+    listener: (args: T) => void
+  ): this {
+    if (typeof ev !== 'symbol') this.subscribe(ev as string)
+
+    if (this.log && typeof ev !== 'symbol')
+      logger.info(`Subscribed to ${ev as string}`)
 
     return super.on(ev, listener)
   }
@@ -108,7 +130,7 @@ export class RMQ extends events.EventEmitter {
   }
 
   /**
-   * Support methos for the on listener definition method.
+   * Support methods for the on listener definition method.
    *
    * @param {string[]} args
    * @return self
@@ -116,32 +138,15 @@ export class RMQ extends events.EventEmitter {
    */
   private subscribe(...args: string[]): RMQ {
     if (this.type === 'pub') return
-    if (arguments.length === 0) {
+
+    if (arguments.length === 0)
       throw new Error('You must be  subscribed to a topic to receive messages')
-    }
+
     const unique = args.filter((a: string) => !this.subscriptions.includes(a))
 
     Array.prototype.push.apply(this.subscriptions, unique)
 
     return this
-  }
-
-  /**
-   * Checks if a msg is valid json.
-   *
-   * @param {string} message
-   * @return json
-   * @private
-   */
-
-  private getValidJSONMessage(message: string): string {
-    try {
-      const jsonMsg = JSON.stringify(message)
-
-      return jsonMsg
-    } catch (e) {
-      throw new Error('The message is not valid JSON')
-    }
   }
 
   /**
@@ -154,31 +159,34 @@ export class RMQ extends events.EventEmitter {
   publish(
     message: Message<string | json | number>,
     topic = 'default'
-  ): Promise<any> {
-    let buf: Buffer
-    if (typeof message.content === 'string') {
-      buf = Buffer.from(message.content)
-    } else if (typeof message.content === 'number') {
-      buf = Buffer.from(message.content.toString())
-    }
+  ): Promise<boolean> {
+    let buffer: Buffer
 
-    if (this.binarySerialization) {
-      const encoded = encode(message.content)
-      buf = Buffer.from(encoded.buffer, encoded.byteOffset, encoded.byteLength)
-    } else {
-      // raw strings transmited through the wire
-      buf = Buffer.from(JSON.stringify(<json>message.content))
-    }
-    if (message.topic) {
-      topic = message.topic
-    }
-    if (this.log) {
+    if (this.log)
       logger.info(
         `Publish message ${JSON.stringify(message.content)} with topic ${topic}`
       )
-    }
 
-    return rmqpublish(this.exchange, topic, buf)
+    if (this.binarySerialization) {
+      const encoded = encode(message.content)
+
+      buffer = Buffer.from(
+        encoded.buffer,
+        encoded.byteOffset,
+        encoded.byteLength
+      )
+    } else if (typeof message.content === 'string')
+      buffer = Buffer.from(message.content)
+    else if (typeof message.content === 'number')
+      buffer = Buffer.from(message.content.toString())
+    else if (typeof message.content === 'object')
+      buffer = Buffer.from(JSON.stringify(message.content))
+
+    if (message.topic) topic = message.topic
+
+    this.emit(this.hooks.get('publish'), { message, topic })
+
+    return rmqpublish(this.exchange, topic, buffer)
   }
 
   /**
@@ -189,10 +197,10 @@ export class RMQ extends events.EventEmitter {
    * @public
    */
   async closeConn(cb: (...params: any[]) => any): Promise<void> {
-    if (this.log) {
-      logger.info('Closing connection')
-    }
+    if (this.log) logger.info('Closing connection')
+
     await rmqclose(cb)
+    this.emit(this.hooks.get('stop'))
   }
 
   /**
@@ -202,15 +210,18 @@ export class RMQ extends events.EventEmitter {
    * @public
    */
   start(): Promise<any> {
-    if (!this.queue && !this.exchange) {
+    if (!this.queue && !this.exchange)
       throw new Error('An exchange defined is mandatory for this library')
-    }
-    if (this.queue && !this.subscriptions) {
+
+    if (this.queue && !this.subscriptions)
       throw new Error('Subscribe to some topics')
-    }
-    if (this.log) {
-      logger.info('Connecting')
-    }
+
+    if (this.log) logger.info('Connecting')
+
+    this.emit(this.hooks.get('start'), {
+      queue: this.queue,
+      exchange: this.exchange
+    })
 
     return rmqconnect(
       this.url,
@@ -219,16 +230,13 @@ export class RMQ extends events.EventEmitter {
       this.heartBeat,
       this.quorumQueuesEnabled
     )
-    // return this
   }
 }
 
 let RMQSingleton: RMQ
 
 export function rmqio(opt: Options): RMQ {
-  if (RMQSingleton) {
-    return RMQSingleton
-  }
+  if (RMQSingleton) return RMQSingleton
 
   const options: Options = opt
 
@@ -249,9 +257,7 @@ export function rmqio(opt: Options): RMQ {
    *  log:
    * }
    */
-  if (!RMQSingleton) {
-    RMQSingleton = new RMQ(options)
-  }
+  if (!RMQSingleton) RMQSingleton = new RMQ(options)
 
   return RMQSingleton
 }

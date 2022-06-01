@@ -1,6 +1,7 @@
 {
   "env": {
-    "node": true
+    "node": true,
+    "jest": true
   },
   "root": true,
   "parser": "@typescript-eslint/parser",
@@ -63,6 +64,7 @@
     "radix": [
       "error",
       "as-needed"
-    ]
+    ],
+    "@typescript-eslint/no-shadow": ["error"]
   }
 }
