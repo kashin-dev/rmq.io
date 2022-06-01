@@ -1,5 +1,5 @@
 import { Channel, connect, Connection } from 'amqplib'
-import { ConnectionType, json, Message, RMQ } from './index'
+import { ConnectionType, Message, json, RMQ } from './index'
 import { FailedConnection, MsgBadFormat } from './rmqError'
 import { decode } from '@msgpack/msgpack'
 import log from './logger'
@@ -93,10 +93,10 @@ export const rmqconnect = async (
 export const rmqpublish = (
   exchange: string,
   topic: string,
-  msg: Buffer
+  buffer: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, msg, { persistent: true })) {
+    if (pubChann.publish(exchange, topic, buffer, { persistent: true })) {
       resolve(true)
     } else {
       reject(new Error())
@@ -155,7 +155,7 @@ const parseMsg = (
   let result: json = {}
   if (binarySerialized) {
     const contentBinary = msg.content as Buffer
-    result = decode(contentBinary)
+    result = decode(contentBinary) as json
   } else {
     msg.content as json
     const content = msg.content.toString()
