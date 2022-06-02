@@ -89,6 +89,7 @@ export class RMQ extends events.EventEmitter {
    * Creates a listener to a RabbitMQ topic. You will receive messages here for one topic.
    *
    * @param {string} ev
+   * @param {(args: T) => void} listener
    * @public
    */
   on<T extends Record<string, unknown>>(
@@ -101,6 +102,26 @@ export class RMQ extends events.EventEmitter {
       logger.info(`Subscribed to ${ev as string}`)
 
     return super.on(ev, listener)
+  }
+
+  /**
+   * Creates one listener for one or more RabbitMQ topic(s). You will receive messages here for N topics.
+   *
+   * @param {string[]} evs
+   * @param {(args: T) => void} listener
+   * @public
+   */
+  on2<T extends Record<string, unknown>>(
+    evs: string[],
+    listener: (args: T) => void
+  ): this {
+    evs.forEach(topic => {
+      this.subscribe(topic)
+      super.on(topic, listener)
+    })
+    if (this.log) logger.info(`Subscribed to group ${evs.join(',')}`)
+
+    return this
   }
 
   /**

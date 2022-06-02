@@ -15,21 +15,43 @@ rmq
   .setRoute('test')
   .start()
   .then(async () => {
-    for (let i = 0; i < 1; i++) {
-      const resAck = await rmq.publish({
-        content: {
-          hello: `ack-${i}`
-        }
-      })
-      console.log(resAck)
+    for (let i = 0; i < 2; i++) {
+      const resAcka = await rmq.publish(
+        {
+          content: {
+            hello: `a-${i}`
+          }
+        },
+        'a'
+      )
+      const resAckb = await rmq.publish(
+        {
+          content: {
+            hello: `b-${i}`
+          }
+        },
+        'b'
+      )
+      const resAckc = await rmq.publish(
+        {
+          content: {
+            hello: `c-${i}`
+          }
+        },
+        'c'
+      )
+
+      console.log(resAcka)
+      console.log(resAckb)
+      console.log(resAckc)
     }
     const resNack = await rmq.publish(
       {
         content: {
-          hello: 'nack'
+          hello: 'world'
         }
       },
-      'nack'
+      'ack'
     )
     console.log(resNack)
   })
