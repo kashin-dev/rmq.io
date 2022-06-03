@@ -38,7 +38,9 @@ export declare type Message<T> = {
   topic?: string
 }
 
-export type json = Record<string, unknown>
+export type json = {
+  [keys: string]: unknown
+}
 
 export class RMQ extends events.EventEmitter {
   private url: string
