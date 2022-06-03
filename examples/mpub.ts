@@ -7,10 +7,11 @@ const rmq = rmqio({
 })
 
 type json = {
-  [key: string]: any
+  [key: string]: unknown
 }
 type Message<T> = {
   content: T
+  topic?: string
 }
 type Publish = {
   message: Message<string | json | number>
