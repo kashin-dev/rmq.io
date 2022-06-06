@@ -7,7 +7,7 @@ const rmq = rmqio({
 })
 
 type json = {
-  [key: string]: unknown
+  [key: string]: any
 }
 type Message<T> = {
   content: T
