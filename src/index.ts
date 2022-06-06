@@ -39,7 +39,7 @@ export declare type Message<T> = {
 }
 
 export type json = {
-  [keys: string]: unknown
+  [keys: string]: any
 }
 
 export class RMQ extends events.EventEmitter {
