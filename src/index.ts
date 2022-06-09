@@ -91,13 +91,9 @@ export class RMQ extends events.EventEmitter {
    * Creates a listener to a RabbitMQ topic. You will receive messages here for one topic.
    *
    * @param {string} ev
-   * @param {(args: T) => void} listener
    * @public
    */
-  on<T extends Record<string, unknown>>(
-    ev: string | symbol,
-    listener: (args: T) => void
-  ): this {
+  on(ev: string, listener: (...args: any[]) => void): this {
     if (typeof ev !== 'symbol') this.subscribe(ev as string)
 
     if (this.log && typeof ev !== 'symbol')
