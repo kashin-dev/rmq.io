@@ -19,7 +19,6 @@ type Publish = {
 }
 
 rmq.addHook<Publish>('publish', async ({ message, topic }) => {
-  console.log('inicia')
   console.log(message)
   console.log(topic)
 
