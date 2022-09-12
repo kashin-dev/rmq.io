@@ -1,4 +1,4 @@
-import { Channel, connect, Connection } from 'amqplib'
+import { Channel, connect, Connection, ConfirmChannel } from 'amqplib'
 import { ConnectionType, Message, json, RMQ } from './index'
 import { FailedConnection, MsgBadFormat } from './rmqError'
 import { decode } from '@msgpack/msgpack'
@@ -7,7 +7,7 @@ const logger = log()
 
 let pubConn: Connection
 let subConn: Connection
-let pubChann: Channel
+let pubChann: ConfirmChannel
 let subChann: Channel
 
 export const RECONN_TIMEOUT = 5000
@@ -101,6 +101,14 @@ export const rmqpublish = (
     } else {
       reject(new Error())
     }
+  })
+}
+
+export const waitOnConfirms = (): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    pubChann.waitForConfirms().then(() => {
+      resolve(true)
+    })
   })
 }
 
