@@ -6,7 +6,8 @@ import {
   RECONN_TIMEOUT,
   rmqclose,
   rmqconnect,
-  rmqpublish
+  rmqpublish,
+  waitOnConfirms
 } from './rmqOperations.js'
 import { encode } from '@msgpack/msgpack'
 
@@ -206,6 +207,17 @@ export class RMQ extends events.EventEmitter {
     this.emit(this.hooks.get('publish'), { message, topic })
 
     return rmqpublish(this.exchange, topic, buffer)
+  }
+
+  /**
+   *  Ends when all messages are published to an exchange
+   *  wrong or right
+   * @return Promise
+   * @public
+   */
+  async waitConfirms(): Promise<void> {
+    if (this.log) logger.info('Waiting on publisher confirms')
+    await waitOnConfirms()
   }
 
   /**
