@@ -96,11 +96,16 @@ export const rmqpublish = (
   buffer: Buffer
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    if (pubChann.publish(exchange, topic, buffer, { persistent: true })) {
-      resolve(true)
-    } else {
-      reject(new Error())
-    }
+    pubChann.publish(
+      exchange,
+      topic,
+      buffer,
+      { persistent: true },
+      (err, ok) => {
+        if (err) reject(err)
+        resolve(true)
+      }
+    )
   })
 }
 
