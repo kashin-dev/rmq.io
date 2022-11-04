@@ -1,0 +1,23 @@
+ci/cd:
+  - .github/workflows/*
+
+infrastructure:
+  - kube/**
+  - kube-staging/**
+  - Dockerfile*
+
+documentation:
+  - README.md
+  - ./*.md
+
+transformations:
+  - dbt/**
+
+data-quality:
+  - soda/**
+  - great-expectations/**
+  - great-expectations-documentation/**
+
+packages-update: 
+  - package-lock.json
+  - package.json
