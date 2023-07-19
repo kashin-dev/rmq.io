@@ -15,6 +15,9 @@
     "pub": "node ./examples/mpub.js",
     "sub": "node ./examples/msub.js"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "nodemonConfig": {
     "ignore": [
       "**/*.test.ts",
