@@ -16,7 +16,7 @@ rmq.addHook('start', data => {
 
 rmq.on(
   'rack',
-  async function(msg, ack, nack) {
+  async function (msg, ack, nack) {
     console.log(msg)
     await ack()
     await nack()
@@ -24,10 +24,10 @@ rmq.on(
   true
 )
 
-rmq.on('ack', async function(msg, ack, nack) {
+rmq.on('ack', async function (msg, ack, nack) {
   await ack()
 })
-rmq.on('nack', async function(msg, ack, nack) {
+rmq.on('nack', async function (msg, ack, nack) {
   await nack('error')
 })
 
@@ -47,7 +47,7 @@ rmq
   })
 
 process.on('SIGINT', () => {
-  rmq.closeConn(function() {
+  rmq.closeConn(function () {
     process.exit(1)
   })
 })
