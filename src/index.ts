@@ -96,11 +96,16 @@ export class RMQ extends events.EventEmitter {
    * @param {string} ev
    * @public
    */
-  on(ev: string, listener: (...args: any[]) => void, internalMsg = false): this {
+  on(
+    ev: string,
+    listener: (...args: any[]) => void,
+    internalMsg = false
+  ): this {
     if (this.subscriptions.concat(this.internalSubscriptions).includes(ev)) {
       throw new Error(`You're already subscribed to ${ev as string}`)
     }
-    if (typeof ev !== 'symbol' && internalMsg) this.internalSubscribe(ev as string)
+    if (typeof ev !== 'symbol' && internalMsg)
+      this.internalSubscribe(ev as string)
     if (typeof ev !== 'symbol' && !internalMsg) this.subscribe(ev as string)
 
     if (this.log && typeof ev !== 'symbol')
@@ -133,19 +138,19 @@ export class RMQ extends events.EventEmitter {
   }
 
   /**
-     * Emits an internal message without requiring a subscription to rabbitmq.
-     *
-     * @param {string[]} ev
-     * @param {any} data
-     * @public
-     */
+   * Emits an internal message without requiring a subscription to rabbitmq.
+   *
+   * @param {string[]} ev
+   * @param {any} data
+   * @public
+   */
 
   emitInternal(ev: string, data: any) {
     this.emit(
       ev,
       data,
-      async () => { },
-      async () => { }
+      async () => {},
+      async () => {}
     )
   }
 
@@ -206,13 +211,14 @@ export class RMQ extends events.EventEmitter {
     if (arguments.length === 0)
       throw new Error('Cant add an empty internal subscription')
 
-    const unique = args.filter((a: string) => !this.internalSubscriptions.includes(a))
+    const unique = args.filter(
+      (a: string) => !this.internalSubscriptions.includes(a)
+    )
 
     Array.prototype.push.apply(this.internalSubscriptions, unique)
 
     return this
   }
-
 
   /**
    * Publish a message, you have to set topic and content of the message
