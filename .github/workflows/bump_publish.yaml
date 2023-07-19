@@ -1,0 +1,78 @@
+name: Publish package
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: ./node_modules
+          key: node-modules
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kashin-dev'
+
+      - run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}
+      - run: npm config set @kashin-dev:registry https://npm.pkg.github.com/kashin-dev
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Git configuration
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Get PR labels
+        id: pr-labels
+        uses: joerick/pr-labels-action@v1.0.7
+
+      - uses: dkershner6/switch-case-action@v1
+        id: version
+        with:
+          default: "patch"
+          conditionals-with-values: |
+            ${{ contains(github.event.comment.body, 'major') }} => major
+            ${{ contains(steps.pr-labels.outputs.labels, 'major') }} => major
+            ${{ contains(steps.pr-labels.outputs.labels, 'minor') }} => minor
+            ${{ contains(steps.pr-labels.outputs.labels, 'patch') }} => patch
+            ${{ contains(steps.pr-labels.outputs.labels, 'premajor') }} => premajor
+            ${{ contains(steps.pr-labels.outputs.labels, 'preminor') }} => preminor
+            ${{ contains(steps.pr-labels.outputs.labels, 'prepatch') }} => prepatch
+
+      - run: |
+          echo "NEW_VERSION"=$(npm version $RELEASE_TYPE --no-git-tag-version) >> $GITHUB_ENV
+        env:
+          RELEASE_TYPE: ${{ steps.version.outputs.value }}
+
+      - name: Commit package.json changes and create tag
+        run: |
+          git add "package*.json"
+          git commit -m "feat: bump to ${{ env.NEW_VERSION }}"
+          git tag ${{ env.NEW_VERSION }}
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ github.head_ref }}
+          tags: true
+          force: true
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.NEW_VERSION }}
