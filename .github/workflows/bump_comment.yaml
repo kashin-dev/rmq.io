@@ -1,0 +1,61 @@
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  pr_commented:
+    name: Bump version
+    if: github.event.issue.pull_request && contains(github.event.comment.body, 'bump')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+
+      - name: Git configuration
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - uses: dkershner6/switch-case-action@v1
+        id: version
+        with:
+          default: "patch"
+          conditionals-with-values: |
+            ${{ contains(github.event.comment.body, 'major') }} => major
+            ${{ contains(github.event.comment.body, 'minor') }} => minor
+            ${{ contains(github.event.comment.body, 'patch') }} => patch
+            ${{ contains(github.event.comment.body, 'premajor') }} => premajor
+            ${{ contains(github.event.comment.body, 'preminor') }} => preminor
+            ${{ contains(github.event.comment.body, 'prepatch') }} => prepatch
+
+      - uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: |
+            major
+            minor
+            patch
+            premajor
+            preminor
+            prepatch
+
+      - uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: ${{ steps.version.outputs.value }}
+
+      - name: Comment PR Success
+        uses: thollander/actions-comment-pull-request@v2
+        if: success()
+        with:
+          message: |
+            Labelled to ${{ steps.version.outputs.value }}
+
+
+      - name: Comment PR Failure
+        uses: thollander/actions-comment-pull-request@v2
+        if: failure()
+        with:
+          message: |
+            Failed to bump to ${{ env.NEW_VERSION }}

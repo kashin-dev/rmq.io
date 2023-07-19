@@ -1,0 +1,16 @@
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  pr_commented:
+    name: Bump info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment PR Success
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            You can bump the version by adding a label to the PR with the release type.
+
+            Or by commenting `bump major`, `bump minor`, `bump patch`, `bump premajor`, `bump preminor`, `bump prepatch` to the PR.
