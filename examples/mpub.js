@@ -1,4 +1,7 @@
-const url = 'amqp://localhost'
+// const url = 'amqp://localhost'
+const url =
+  'amqps://sxdwecyw:ieW-YRP8AoBCnwX0NHFSvNgYSx1ou5Yy@possum.lmq.cloudamqp.com/sxdwecyw'
+
 const { rmqio } = require('../dist')
 
 const rmq = rmqio({
@@ -57,7 +60,7 @@ rmq
   })
 
 process.on('SIGINT', () => {
-  rmq.closeConn(function () {
+  rmq.closeConn(function() {
     process.exit(1)
   })
 })

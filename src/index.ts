@@ -47,6 +47,7 @@ export class RMQ extends events.EventEmitter {
   private url: string
   public queue: string
   public subscriptions: string[]
+  public internalSubscriptions: string[]
   public exchange: string
   private type: 'pub' | 'sub'
   private reconnTime: number
@@ -72,6 +73,7 @@ export class RMQ extends events.EventEmitter {
     this.heartBeat = options.heartBeat
     this.persistToFile = options.persistFileOnConnError
     this.subscriptions = []
+    this.internalSubscriptions = []
     this.log = options.log
     this.quorumQueuesEnabled = options.quorumQueuesEnabled
     this.binarySerialization = options.binarySerialization
@@ -94,11 +96,18 @@ export class RMQ extends events.EventEmitter {
    * @param {string} ev
    * @public
    */
-  on(ev: string, listener: (...args: any[]) => void): this {
-    if (typeof ev !== 'symbol') this.subscribe(ev as string)
+  on(ev: string, listener: (...args: any[]) => void, internalMsg = false): this {
+    if (this.subscriptions.concat(this.internalSubscriptions).includes(ev)) {
+      throw new Error(`You're already subscribed to ${ev as string}`)
+    }
+    if (typeof ev !== 'symbol' && internalMsg) this.internalSubscribe(ev as string)
+    if (typeof ev !== 'symbol' && !internalMsg) this.subscribe(ev as string)
 
     if (this.log && typeof ev !== 'symbol')
       logger.info(`Subscribed to ${ev as string}`)
+
+    if (internalMsg)
+      logger.info(`Just listening to ${ev as string}, not a subscription`)
 
     return super.on(ev, listener)
   }
@@ -121,6 +130,23 @@ export class RMQ extends events.EventEmitter {
     if (this.log) logger.info(`Subscribed to group ${evs.join(',')}`)
 
     return this
+  }
+
+  /**
+     * Emits an internal message without requiring a subscription to rabbitmq.
+     *
+     * @param {string[]} ev
+     * @param {any} data
+     * @public
+     */
+
+  emitInternal(ev: string, data: any) {
+    this.emit(
+      ev,
+      data,
+      async () => { },
+      async () => { }
+    )
   }
 
   /**
@@ -168,6 +194,25 @@ export class RMQ extends events.EventEmitter {
 
     return this
   }
+
+  /**
+   * Keep track of internal subscriptions.
+   *
+   * @param {string[]} args
+   * @return self
+   * @private
+   */
+  private internalSubscribe(...args: string[]): RMQ {
+    if (arguments.length === 0)
+      throw new Error('Cant add an empty internal subscription')
+
+    const unique = args.filter((a: string) => !this.internalSubscriptions.includes(a))
+
+    Array.prototype.push.apply(this.internalSubscriptions, unique)
+
+    return this
+  }
+
 
   /**
    * Publish a message, you have to set topic and content of the message
