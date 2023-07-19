@@ -1,5 +1,5 @@
 {
-  "name": "rmq.io",
+  "name": "@kashin-dev/rmq.io",
   "version": "1.0.23",
   "description": "RabbitMQ complexity reduced to a socket.io like lib",
   "main": "dist/index.js",
