@@ -60,7 +60,7 @@ rmq
   })
 
 process.on('SIGINT', () => {
-  rmq.closeConn(function() {
+  rmq.closeConn(function () {
     process.exit(1)
   })
 })
