@@ -1,5 +1,4 @@
-const url =
-  'amqps://sxdwecyw:ieW-YRP8AoBCnwX0NHFSvNgYSx1ou5Yy@possum.lmq.cloudamqp.com/sxdwecyw'
+const url = ''
 const { rmqio } = require('../dist')
 
 const rmq = rmqio({
