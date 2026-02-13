@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "@msgpack/msgpack": "^2.7.1",
-    "amqplib": "^0.8.0",
+    "amqplib": "~0.8.0",
     "pino": "^6.11.1"
   },
   "devDependencies": {
