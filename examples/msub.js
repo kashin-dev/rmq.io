@@ -1,5 +1,4 @@
-const url =
-  'amqps://sxdwecyw:***REMOVED***'
+const url = ''
 const { rmqio } = require('../dist')
 
 const rmq = rmqio({

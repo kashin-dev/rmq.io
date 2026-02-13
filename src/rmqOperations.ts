@@ -1,12 +1,12 @@
-import { Channel, connect, Connection, ConfirmChannel } from 'amqplib'
+import { Channel, connect, ConfirmChannel, ChannelModel } from 'amqplib'
 import { ConnectionType, Message, json, RMQ } from './index'
 import { FailedConnection, MsgBadFormat } from './rmqError'
 import { decode } from '@msgpack/msgpack'
 import log from './logger'
 const logger = log()
 
-let pubConn: Connection
-let subConn: Connection
+let pubConn: ChannelModel
+let subConn: ChannelModel
 let pubChann: ConfirmChannel
 let subChann: Channel
 
