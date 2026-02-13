@@ -1,6 +1,6 @@
 {
   "name": "@kashin-dev/rmq.io",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "RabbitMQ complexity reduced to a socket.io like lib",
   "main": "dist/index.js",
   "repository": "git@github.com:j0t3x/rmq.io.git",
@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "@msgpack/msgpack": "^2.7.1",
-    "amqplib": "^0.8.0",
+    "amqplib": "~0.8.0",
     "pino": "^6.11.1"
   },
   "devDependencies": {
