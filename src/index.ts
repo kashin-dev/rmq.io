@@ -149,8 +149,8 @@ export class RMQ extends events.EventEmitter {
     this.emit(
       ev,
       data,
-      async () => {},
-      async () => {}
+      async () => { },
+      async () => { }
     )
   }
 
@@ -316,7 +316,6 @@ export class RMQ extends events.EventEmitter {
 }
 
 let RMQSingleton: RMQ
-
 export function rmqio(opt: Options): RMQ {
   if (RMQSingleton) return RMQSingleton
 
