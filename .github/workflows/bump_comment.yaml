@@ -8,17 +8,6 @@ jobs:
     if: github.event.issue.pull_request && contains(github.event.comment.body, 'bump')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-node@v1
-        with:
-          node-version: 12.x
-
-      - name: Git configuration
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
       - uses: dkershner6/switch-case-action@v1
         id: version
         with:
@@ -44,18 +33,3 @@ jobs:
       - uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: ${{ steps.version.outputs.value }}
-
-      - name: Comment PR Success
-        uses: thollander/actions-comment-pull-request@v2
-        if: success()
-        with:
-          message: |
-            Labelled to ${{ steps.version.outputs.value }}
-
-
-      - name: Comment PR Failure
-        uses: thollander/actions-comment-pull-request@v2
-        if: failure()
-        with:
-          message: |
-            Failed to bump to ${{ env.NEW_VERSION }}
