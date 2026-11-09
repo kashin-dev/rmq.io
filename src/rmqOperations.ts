@@ -70,7 +70,7 @@ export const rmqconnect = async (
   pubConn = await connect(url)
   pubConn.on('error', err => {
     if (err.message !== 'Connection closing') {
-      throw new FailedConnection(err)
+      throw new FailedConnection(err.message)
     }
   })
 
@@ -110,11 +110,10 @@ export const rmqpublish = (
 }
 
 export const waitOnConfirms = (): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    pubChann.waitForConfirms().then(() => {
-      resolve(true)
-    })
-  })
+  return pubChann.waitForConfirms().then(
+    () => true,
+    () => true
+  )
 }
 
 export const rmqclose = async (

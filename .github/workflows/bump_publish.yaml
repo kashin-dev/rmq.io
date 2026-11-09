@@ -8,16 +8,16 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/cache@v3
         with:
           path: ./node_modules
           key: node-modules
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: '12.x'
+          node-version: '22.x'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@kashin-dev'
 
