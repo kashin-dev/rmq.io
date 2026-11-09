@@ -126,11 +126,7 @@ export const rmqclose = async (
   cb: (...params: any[]) => any
 ): Promise<void> => {
   cb()
-  try {
-    await pushChannConfirms()
-  } catch (e) {
-    void e
-  }
+  await pushChannConfirms().catch(() => undefined)
 
   await pubConn.close()
   if (subConn) await subConn.close()

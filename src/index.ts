@@ -149,8 +149,8 @@ export class RMQ extends events.EventEmitter {
     this.emit(
       ev,
       data,
-      async () => {},
-      async () => {}
+      async () => undefined,
+      async () => undefined
     )
   }
 
