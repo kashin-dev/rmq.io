@@ -1,6 +1,5 @@
 // const url = 'amqp://localhost'
-const url =
-  'amqps://sxdwecyw:***REMOVED***'
+const url = 'amqp://guest:guest@localhost:5672'
 
 const { rmqio } = require('../dist')
 

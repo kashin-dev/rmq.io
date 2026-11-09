@@ -67,10 +67,15 @@ export const rmqconnect = async (
   hb: number,
   qqe: boolean
 ): Promise<void> => {
-  pubConn = await connect(url)
+  // amqplib v2: heartbeat 0 explicitly disables heartbeats in TuneOk.
+  // Only add the heartbeat connection parameter when a positive value
+  // is configured, otherwise let the server decide (previous default).
+  const connUrl =
+    hb > 0 ? `${url}${url.includes('?') ? '&' : '?'}heartbeat=${hb}` : url
+  pubConn = await connect(connUrl)
   pubConn.on('error', err => {
     if (err.message !== 'Connection closing') {
-      throw new FailedConnection(err)
+      throw new FailedConnection(err.message)
     }
   })
 
@@ -80,13 +85,15 @@ export const rmqconnect = async (
   }
 
   pubChann = await pubConn.createConfirmChannel()
-  checkExchange(ee.exchange)
+  pubChann.on('error', () => undefined)
+  await checkExchange(ee.exchange)
   if (type === 'sub') {
-    subConn = await connect(url)
+    subConn = await connect(connUrl)
     subChann = await subConn.createChannel()
-    checkExchange(ee.exchange)
-    checkQueue(ee.queue, qqe, ee.prefetchPolicy)
-    bindTo(ee)
+    subChann.on('error', () => undefined)
+    await checkExchange(ee.exchange)
+    await checkQueue(ee.queue, qqe, ee.prefetchPolicy)
+    await bindTo(ee)
   }
 }
 
@@ -110,19 +117,27 @@ export const rmqpublish = (
 }
 
 export const waitOnConfirms = (): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    pubChann.waitForConfirms().then(() => {
-      resolve(true)
-    })
-  })
+  // amqplib v2: waitForConfirms rejects when the channel closes
+  // with unconfirmed messages, so the rejection must be propagated.
+  return pubChann.waitForConfirms().then(() => true)
 }
 
 export const rmqclose = async (
   cb: (...params: any[]) => any
 ): Promise<void> => {
   cb()
+  try {
+    await pushChannConfirms()
+  } catch (e) {
+    void e
+  }
+
   await pubConn.close()
-  await subConn.close()
+  if (subConn) await subConn.close()
+}
+
+const pushChannConfirms = async (): Promise<void> => {
+  if (pubChann) await pubChann.waitForConfirms()
 }
 
 const checkQueue = async (q: string, qqe: boolean, prefetch: number) => {
@@ -161,7 +176,7 @@ const closeOnErr = async (err: Error) => {
   await subConn.close()
 }
 
-const parseMsg = (
+export const parseMsg = (
   msg: Message<json | Buffer>,
   binarySerialized: boolean
 ): json => {
