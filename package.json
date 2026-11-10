@@ -33,16 +33,18 @@
   },
   "author": "Tex",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@msgpack/msgpack": "^2.7.1",
-    "amqplib": "^0.10.9",
+    "amqplib": "^2.3.1",
     "pino": "^6.11.1"
   },
   "devDependencies": {
     "@jest/types": "^28.1.0",
-    "@types/amqplib": "^0.10.8",
     "@types/jest": "^27.5.2",
-    "@types/node": "^14.17.33",
+    "@types/node": "^18.19.100",
     "@types/pino": "^6.3.6",
     "@typescript-eslint/eslint-plugin": "^4.6.0",
     "@typescript-eslint/parser": "^4.6.0",
@@ -74,6 +76,6 @@
     "titleTemplate": "{title}"
   },
   "volta": {
-    "node": "12.22.12"
+    "node": "18.20.4"
   }
 }

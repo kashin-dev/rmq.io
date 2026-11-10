@@ -1,0 +1,57 @@
+name: Test
+
+on: [pull_request]
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kashin-dev'
+
+      - run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}
+
+      - run: npm ci
+
+      - run: npm test
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    env:
+      RUN_INTEGRATION: '1'
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kashin-dev'
+
+      - run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.NPM_TOKEN }}
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm test
